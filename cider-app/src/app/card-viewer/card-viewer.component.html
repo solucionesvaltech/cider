@@ -45,12 +45,18 @@
             </swiper-container>
 
             <div class="viewer-nav">
+                <button pButton icon="pi pi-angle-double-left" (click)="prevGroup()"
+                    title="Previous edition (Shift+←)" *ngIf="sortBy === 'edition' && groups.length > 1"
+                    class="p-button-rounded p-button-secondary p-button-text"></button>
                 <button pButton icon="pi pi-chevron-left" (click)="prev()"
-                    class="p-button-rounded p-button-secondary"></button>
+                    title="Previous card (←)" class="p-button-rounded p-button-secondary"></button>
                 <button pButton icon="pi pi-refresh" (click)="flipSide()" title="Flip side (Space)"
                     class="p-button-rounded p-button-secondary"></button>
                 <button pButton icon="pi pi-chevron-right" (click)="next()"
-                    class="p-button-rounded p-button-secondary"></button>
+                    title="Next card (→)" class="p-button-rounded p-button-secondary"></button>
+                <button pButton icon="pi pi-angle-double-right" (click)="nextGroup()"
+                    title="Next edition (Shift+→)" *ngIf="sortBy === 'edition' && groups.length > 1"
+                    class="p-button-rounded p-button-secondary p-button-text"></button>
             </div>
         </div>
 
@@ -85,10 +91,14 @@
                     <div class="actions-list">
                         <button pButton label="Edit advanced (E)" icon="pi pi-pencil"
                             (click)="openEditDialog()"></button>
+                        <button pButton label="Duplicate" icon="pi pi-clone"
+                            (click)="duplicateFocused()" class="p-button-secondary"></button>
                         <button pButton label="Export PNG" icon="pi pi-image"
                             (click)="exportFocusedAsPng()" class="p-button-secondary"></button>
                         <button pButton label="Export PDF" icon="pi pi-file-pdf"
                             (click)="exportFocusedAsPdf()" class="p-button-secondary"></button>
+                        <button pButton label="Delete" icon="pi pi-trash"
+                            (click)="deleteFocused()" class="p-button-danger p-button-outlined"></button>
                     </div>
                 </p-tabPanel>
             </p-tabView>
@@ -107,4 +117,6 @@
     [(visible)]="editDialogVisible"
     [entity]="editDialogEntity"
     (visibleChange)="!$event && onEditDialogClose()"></app-entity-dialog>
+
+<p-confirmDialog header="Confirm Delete" icon="pi pi-exclamation-triangle"></p-confirmDialog>
 

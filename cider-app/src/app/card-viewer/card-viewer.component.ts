@@ -6,6 +6,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 import * as htmlToImage from 'html-to-image';
 import * as pdfMake from 'pdfmake/build/pdfmake';
 import { Subject, Subscription, debounceTime } from 'rxjs';
+import { ConfirmationService } from 'primeng/api';
 import { CardPreviewComponent } from '../card-preview/card-preview.component';
 import { CardAttributesService } from '../data-services/services/card-attributes.service';
 import { CardTemplatesService } from '../data-services/services/card-templates.service';
@@ -31,7 +32,8 @@ interface EditionGroup {
 @Component({
   selector: 'app-card-viewer',
   templateUrl: './card-viewer.component.html',
-  styleUrls: ['./card-viewer.component.scss']
+  styleUrls: ['./card-viewer.component.scss'],
+  providers: [ConfirmationService]
 })
 export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('swiper') swiperRef?: ElementRef<any>;
@@ -79,6 +81,7 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     private editionsService: EditionsService,
     public templatesService: CardTemplatesService,
     private attributesService: CardAttributesService,
+    private confirmationService: ConfirmationService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -200,6 +203,37 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   next(): void { this.applyFocus(this.focusedIndex + 1); }
   prev(): void { this.applyFocus(this.focusedIndex - 1); }
 
+  nextGroup(): void {
+    if (this.groups.length <= 1) {
+      this.next();
+      return;
+    }
+    const currentKey = this.currentGroupKey();
+    const idx = this.groups.findIndex(g => g.key === currentKey);
+    const targetGroup = this.groups[(idx + 1) % this.groups.length];
+    const targetCard = targetGroup.cards[0];
+    const targetIndex = this.flatList.findIndex(c => c.id === targetCard.id);
+    this.applyFocus(targetIndex);
+  }
+
+  prevGroup(): void {
+    if (this.groups.length <= 1) {
+      this.prev();
+      return;
+    }
+    const currentKey = this.currentGroupKey();
+    const idx = this.groups.findIndex(g => g.key === currentKey);
+    const targetGroup = this.groups[(idx - 1 + this.groups.length) % this.groups.length];
+    const targetCard = targetGroup.cards[0];
+    const targetIndex = this.flatList.findIndex(c => c.id === targetCard.id);
+    this.applyFocus(targetIndex);
+  }
+
+  private currentGroupKey(): string {
+    if (!this.focusedCard) return '';
+    return this.focusedCard.editionId == null ? NO_EDITION_KEY : '' + this.focusedCard.editionId;
+  }
+
   templateFor(card?: Card): CardTemplate | undefined {
     if (!card) return undefined;
     const id = this.showBack ? card.backCardTemplateId : card.frontCardTemplateId;
@@ -221,16 +255,23 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cardForm = new FormGroup(controls);
     this.formSub = this.cardForm.valueChanges.pipe(debounceTime(300)).subscribe(value => {
       if (!this.focusedCard) return;
+      const prevEditionId = this.focusedCard.editionId;
       const merged: Card = { ...this.focusedCard, ...(value as any) };
       this.focusedCard = merged;
-      const idx = this.flatList.findIndex(c => c.id === merged.id);
-      if (idx >= 0) this.flatList[idx] = merged;
       const masterIdx = this.cards.findIndex(c => c.id === merged.id);
       if (masterIdx >= 0) this.cards[masterIdx] = merged;
       this.focusedEdition = merged.editionId == null
         ? null
         : this.editions.find(e => e.id === merged.editionId) ?? null;
       this.saveSubject.next({ id: merged.id, entity: merged });
+      if (merged.editionId !== prevEditionId && this.sortBy === 'edition') {
+        this.recomputeGroups();
+        const newIdx = this.flatList.findIndex(c => c.id === merged.id);
+        if (newIdx >= 0) this.focusedIndex = newIdx;
+      } else {
+        const idx = this.flatList.findIndex(c => c.id === merged.id);
+        if (idx >= 0) this.flatList[idx] = merged;
+      }
     });
   }
 
@@ -265,11 +306,11 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     switch (event.key) {
       case 'ArrowRight':
-        this.next();
+        if (event.shiftKey) this.nextGroup(); else this.next();
         event.preventDefault();
         break;
       case 'ArrowLeft':
-        this.prev();
+        if (event.shiftKey) this.prevGroup(); else this.prev();
         event.preventDefault();
         break;
       case 'f':
@@ -355,6 +396,34 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.focusedCard) return;
     this.editDialogEntity = { ...this.focusedCard };
     this.editDialogVisible = true;
+  }
+
+  async duplicateFocused(): Promise<void> {
+    if (!this.focusedCard) return;
+    const { id, ...rest } = this.focusedCard;
+    const copy = { ...rest, name: (this.focusedCard.name || 'Card') + ' (copy)' } as Card;
+    const created = await this.cardsService.create(copy);
+    await this.reload();
+    const idx = this.flatList.findIndex(c => c.id === (created as any).id);
+    if (idx >= 0) this.applyFocus(idx);
+  }
+
+  deleteFocused(): void {
+    if (!this.focusedCard) return;
+    const card = this.focusedCard;
+    this.confirmationService.confirm({
+      message: `Delete card "${card.name || 'Untitled'}"? This can't be undone.`,
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        await this.cardsService.delete(card.id);
+        const prevIndex = this.focusedIndex;
+        await this.reload();
+        if (this.flatList.length > 0) {
+          this.applyFocus(Math.min(prevIndex, this.flatList.length - 1));
+        }
+      }
+    });
   }
 
   async onEditDialogClose(): Promise<void> {
