@@ -67,6 +67,7 @@ import { Card3dTiltDirective } from './card-viewer/card-3d-tilt.directive';
 import { OutputFormattersModule } from './output-formatters/output-formatters.module';
 import { DeckStatsComponent } from './deck-stats/deck-stats.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { PrintTemplatesComponent } from './print-templates/print-templates.component';
 
 @NgModule({
   declarations: [
@@ -92,7 +93,8 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
     EditionsComponent,
     CardViewerComponent,
     Card3dTiltDirective,
-    DeckStatsComponent
+    DeckStatsComponent,
+    PrintTemplatesComponent
   ],
   imports: [
     BrowserModule,

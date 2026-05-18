@@ -9,6 +9,7 @@ import { CardsComponent } from './cards/cards.component';
 import { DeckStatsComponent } from './deck-stats/deck-stats.component';
 import { EditionsComponent } from './editions/editions.component';
 import { ExportCardsComponent } from './export-cards/export-cards.component';
+import { PrintTemplatesComponent } from './print-templates/print-templates.component';
 import { DeckGuard } from './deck.guard';
 import { DecksComponent } from './decks/decks.component';
 import { WelcomeComponent } from './welcome/welcome.component';
@@ -17,6 +18,7 @@ import { ProjectGuard } from './project.guard';
 const routes: Routes = [
   { path: 'decks', component: DecksComponent, canActivate: [ProjectGuard]},
   { path: 'assets', component: AssetsComponent, canActivate: [ProjectGuard]},
+  { path: 'print-templates', component: PrintTemplatesComponent, canActivate: [ProjectGuard]},
   { path: 'decks/:deckId/cards', component: CardsComponent, canActivate: [ProjectGuard, DeckGuard]},
   { path: 'decks/:deckId/cards/listing', component: CardsComponent, canActivate: [ProjectGuard, DeckGuard]},
   { path: 'decks/:deckId/cards/thumbnails', component: CardThumbnailsComponent, canActivate: [ProjectGuard, DeckGuard]},
