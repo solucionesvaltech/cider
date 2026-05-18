@@ -1,0 +1,102 @@
+<app-page-header header="Card Viewer" subheader="Explore your deck card by card"></app-page-header>
+<app-cards-tab-menu></app-cards-tab-menu>
+
+<p-card styleClass="page-card tabbed-card viewer-card">
+    <div class="viewer-toolbar">
+        <input #searchInput type="search" pInputText placeholder="Search (F)"
+            [(ngModel)]="searchQuery" (input)="onSearchChange()" class="viewer-search">
+        <p-multiSelect [options]="editions" [(ngModel)]="selectedEditionIds"
+            optionLabel="name" optionValue="id" placeholder="All editions"
+            (onChange)="onFiltersChange()" styleClass="viewer-multiselect"
+            display="chip" appendTo="body" *ngIf="editions.length > 0"></p-multiSelect>
+        <p-selectButton [options]="[{label:'By edition', value:'edition'},{label:'By name', value:'name'}]"
+            [(ngModel)]="sortBy" (onChange)="onFiltersChange()"
+            optionLabel="label" optionValue="value"></p-selectButton>
+        <p-selectButton [options]="sideOptions" [(ngModel)]="selectedSide"
+            (onChange)="showBack = selectedSide === 'back'"
+            optionLabel="label" optionValue="value"></p-selectButton>
+        <span class="viewer-position" *ngIf="flatList.length > 0">
+            {{ focusedIndex + 1 }} / {{ flatList.length }}
+        </span>
+    </div>
+
+    <div class="viewer-layout" *ngIf="flatList.length > 0; else emptyState">
+        <div class="viewer-stage">
+            <div class="edition-banner" *ngIf="sortBy === 'edition'">
+                <span class="edition-chip" [style.background]="editionColor(focusedEdition)">
+                    <i *ngIf="focusedEdition?.icon" class="pi {{ focusedEdition?.icon }}"></i>
+                    {{ focusedEdition?.name || noEditionLabel }}
+                </span>
+            </div>
+
+            <swiper-container #swiper class="viewer-swiper"
+                effect="coverflow" grab-cursor="true" centered-slides="true"
+                slides-per-view="auto" space-between="40"
+                keyboard="true" mousewheel="true" navigation="true"
+                coverflow-effect-rotate="35" coverflow-effect-stretch="0"
+                coverflow-effect-depth="120" coverflow-effect-modifier="1"
+                coverflow-effect-slide-shadows="false">
+                <swiper-slide *ngFor="let card of flatList; let i = index" class="viewer-slide">
+                    <div class="viewer-card-frame" appCard3dTilt [tiltEnabled]="i === focusedIndex">
+                        <app-card-preview [card]="card" [scale]="0.6" [cache]="false"
+                            [template]="$any(templateFor(card)) || $any({})"></app-card-preview>
+                    </div>
+                </swiper-slide>
+            </swiper-container>
+
+            <div class="viewer-nav">
+                <button pButton icon="pi pi-chevron-left" (click)="prev()"
+                    class="p-button-rounded p-button-secondary"></button>
+                <button pButton icon="pi pi-refresh" (click)="flipSide()" title="Flip side (Space)"
+                    class="p-button-rounded p-button-secondary"></button>
+                <button pButton icon="pi pi-chevron-right" (click)="next()"
+                    class="p-button-rounded p-button-secondary"></button>
+            </div>
+        </div>
+
+        <aside class="viewer-side-panel" *ngIf="focusedCard">
+            <h3 class="side-panel-title">{{ focusedCard.name || 'Untitled' }}</h3>
+            <p-tabView>
+                <p-tabPanel header="Attributes">
+                    <form [formGroup]="cardForm" class="attr-form">
+                        <div class="attr-field" *ngFor="let field of fields">
+                            <label>{{ field.header }}</label>
+                            <ng-container [ngSwitch]="field.type">
+                                <input *ngSwitchCase="FieldType.text" pInputText
+                                    [formControlName]="$any(field.field)">
+                                <textarea *ngSwitchCase="FieldType.textArea" pInputTextarea rows="3"
+                                    [formControlName]="$any(field.field)"></textarea>
+                                <input *ngSwitchCase="FieldType.number" type="number" pInputText
+                                    [formControlName]="$any(field.field)">
+                                <p-dropdown *ngSwitchCase="FieldType.option"
+                                    [formControlName]="$any(field.field)"
+                                    [options]="(optionsForField(field) | async) || []"
+                                    [optionLabel]="optionLabelKey(field)"
+                                    [optionValue]="optionValueKey(field)"
+                                    [showClear]="true" placeholder="—"
+                                    appendTo="body"></p-dropdown>
+                                <input *ngSwitchDefault pInputText [formControlName]="$any(field.field)">
+                            </ng-container>
+                            <small *ngIf="field.description" class="attr-help">{{ field.description }}</small>
+                        </div>
+                    </form>
+                </p-tabPanel>
+                <p-tabPanel header="Actions">
+                    <div class="actions-list">
+                        <button pButton label="Export PNG" icon="pi pi-image"
+                            (click)="exportFocusedAsPng()" class="p-button-secondary"></button>
+                        <button pButton label="Export PDF" icon="pi pi-file-pdf"
+                            (click)="exportFocusedAsPdf()" class="p-button-secondary"></button>
+                    </div>
+                </p-tabPanel>
+            </p-tabView>
+        </aside>
+    </div>
+
+    <ng-template #emptyState>
+        <div class="viewer-empty">
+            <i class="pi pi-inbox" style="font-size: 3rem; opacity: 0.4;"></i>
+            <p>No cards match the current filters.</p>
+        </div>
+    </ng-template>
+</p-card>

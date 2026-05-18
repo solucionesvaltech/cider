@@ -1,8 +1,11 @@
-import { NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+
+import { register as registerSwiperElements } from 'swiper/element/bundle';
+registerSwiperElements();
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -58,6 +61,9 @@ import { PageHeaderComponent } from './page-header/page-header.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { ExportSelectionDialogComponent } from './export-selection-dialog/export-selection-dialog.component';
 import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
+import { EditionsComponent } from './editions/editions.component';
+import { CardViewerComponent } from './card-viewer/card-viewer.component';
+import { Card3dTiltDirective } from './card-viewer/card-3d-tilt.directive';
 
 @NgModule({
   declarations: [
@@ -79,7 +85,10 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
     CardThumbnailsComponent,
     PageHeaderComponent,
     WelcomeComponent,
-    ExportSelectionDialogComponent
+    ExportSelectionDialogComponent,
+    EditionsComponent,
+    CardViewerComponent,
+    Card3dTiltDirective
   ],
   imports: [
     BrowserModule,
@@ -97,6 +106,7 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
     ToolbarModule,
     DialogModule,
     FormsModule,
+    ReactiveFormsModule,
     InputTextModule,
     InputTextareaModule,
     SplitterModule,
@@ -119,6 +129,7 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
     DataViewModule
   ],
   providers: [CardToHtmlPipe],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AppModule { }

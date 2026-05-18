@@ -1,0 +1,345 @@
+import {
+  AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener,
+  OnDestroy, OnInit, QueryList, ViewChild, ViewChildren
+} from '@angular/core';
+import { FormControl, FormGroup } from '@angular/forms';
+import * as htmlToImage from 'html-to-image';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import { Subject, Subscription, debounceTime } from 'rxjs';
+import { CardPreviewComponent } from '../card-preview/card-preview.component';
+import { CardAttributesService } from '../data-services/services/card-attributes.service';
+import { CardTemplatesService } from '../data-services/services/card-templates.service';
+import { CardsService } from '../data-services/services/cards.service';
+import { EditionsService } from '../data-services/services/editions.service';
+import { Card } from '../data-services/types/card.type';
+import { CardTemplate } from '../data-services/types/card-template.type';
+import { Edition } from '../data-services/types/edition.type';
+import { EntityField } from '../data-services/types/entity-field.type';
+import { FieldType } from '../data-services/types/field-type.type';
+import FileUtils from '../shared/utils/file-utils';
+import StringUtils from '../shared/utils/string-utils';
+
+const NO_EDITION_KEY = '__none__';
+const NO_EDITION_LABEL = 'Sin edición';
+
+interface EditionGroup {
+  key: string;
+  edition: Edition | null;
+  cards: Card[];
+}
+
+@Component({
+  selector: 'app-card-viewer',
+  templateUrl: './card-viewer.component.html',
+  styleUrls: ['./card-viewer.component.scss']
+})
+export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('swiper') swiperRef?: ElementRef<any>;
+  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
+  @ViewChildren(CardPreviewComponent) previewComponents: QueryList<CardPreviewComponent> = {} as QueryList<CardPreviewComponent>;
+
+  cards: Card[] = [];
+  editions: Edition[] = [];
+  templates: CardTemplate[] = [];
+  templateById = new Map<number, CardTemplate>();
+  fields: EntityField<Card>[] = [];
+
+  groups: EditionGroup[] = [];
+  flatList: Card[] = [];
+  focusedIndex = 0;
+  focusedCard?: Card;
+  focusedEdition?: Edition | null;
+  showBack = false;
+  cardForm = new FormGroup({});
+
+  searchQuery = '';
+  selectedEditionIds: (number | string)[] = [];
+  sortBy: 'edition' | 'name' = 'edition';
+
+  sideOptions = [
+    { label: 'Front', value: 'front' },
+    { label: 'Back', value: 'back' }
+  ];
+  selectedSide: 'front' | 'back' = 'front';
+
+  noEditionKey = NO_EDITION_KEY;
+  noEditionLabel = NO_EDITION_LABEL;
+  FieldType = FieldType;
+
+  private swiperReady = false;
+  private formSub?: Subscription;
+  private saveSubject = new Subject<{ id: number; entity: Card }>();
+  private saveSub?: Subscription;
+
+  constructor(
+    private cardsService: CardsService,
+    private editionsService: EditionsService,
+    public templatesService: CardTemplatesService,
+    private attributesService: CardAttributesService,
+    private cdr: ChangeDetectorRef
+  ) { }
+
+  async ngOnInit(): Promise<void> {
+    await this.reload();
+    this.saveSub = this.saveSubject.pipe(debounceTime(350)).subscribe(({ id, entity }) => {
+      this.cardsService.update(id, entity).catch(err => console.error('Failed to save card', err));
+    });
+  }
+
+  ngAfterViewInit(): void {
+    queueMicrotask(() => this.attachSwiperEvents());
+  }
+
+  ngOnDestroy(): void {
+    this.formSub?.unsubscribe();
+    this.saveSub?.unsubscribe();
+  }
+
+  async reload(): Promise<void> {
+    const [cards, editions, templates, fields] = await Promise.all([
+      this.cardsService.getAll(),
+      this.editionsService.getAll(),
+      this.templatesService.getAll(),
+      this.cardsService.getFields()
+    ]);
+    this.cards = cards;
+    this.editions = editions.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    this.templates = templates;
+    this.templateById = new Map(templates.map(t => [t.id, t]));
+    this.fields = fields.filter(f => !f.hidden);
+    this.recomputeGroups();
+    this.applyFocus(0);
+  }
+
+  recomputeGroups(): void {
+    const query = this.searchQuery.trim().toLowerCase();
+    const selected = this.selectedEditionIds && this.selectedEditionIds.length > 0
+      ? new Set(this.selectedEditionIds.map(v => '' + v))
+      : null;
+
+    const matches = (c: Card): boolean => {
+      if (query) {
+        const hay = JSON.stringify(c).toLowerCase();
+        if (!hay.includes(query)) {
+          return false;
+        }
+      }
+      if (selected) {
+        const key = c.editionId == null ? NO_EDITION_KEY : '' + c.editionId;
+        if (!selected.has(key)) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const filtered = this.cards.filter(matches);
+
+    if (this.sortBy === 'name') {
+      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      this.groups = [{ key: 'all', edition: null, cards: filtered }];
+    } else {
+      const byEdition = new Map<string, Card[]>();
+      filtered.forEach(c => {
+        const key = c.editionId == null ? NO_EDITION_KEY : '' + c.editionId;
+        if (!byEdition.has(key)) {
+          byEdition.set(key, []);
+        }
+        byEdition.get(key)!.push(c);
+      });
+      const orderedKeys = this.editions
+        .map(e => '' + e.id)
+        .filter(k => byEdition.has(k));
+      if (byEdition.has(NO_EDITION_KEY)) {
+        orderedKeys.push(NO_EDITION_KEY);
+      }
+      this.groups = orderedKeys.map(key => ({
+        key,
+        edition: key === NO_EDITION_KEY ? null : this.editions.find(e => '' + e.id === key) ?? null,
+        cards: byEdition.get(key)!.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      }));
+    }
+
+    this.flatList = this.groups.flatMap(g => g.cards);
+  }
+
+  onSearchChange(): void {
+    this.recomputeGroups();
+    this.applyFocus(0);
+  }
+
+  onFiltersChange(): void {
+    this.recomputeGroups();
+    this.applyFocus(0);
+  }
+
+  applyFocus(index: number): void {
+    if (this.flatList.length === 0) {
+      this.focusedCard = undefined;
+      this.focusedEdition = undefined;
+      this.cardForm = new FormGroup({});
+      return;
+    }
+    const safe = ((index % this.flatList.length) + this.flatList.length) % this.flatList.length;
+    this.focusedIndex = safe;
+    this.focusedCard = this.flatList[safe];
+    this.focusedEdition = this.focusedCard.editionId == null
+      ? null
+      : this.editions.find(e => e.id === this.focusedCard!.editionId) ?? null;
+    this.buildForm(this.focusedCard);
+    if (this.swiperReady && this.swiperRef?.nativeElement?.swiper) {
+      try {
+        this.swiperRef.nativeElement.swiper.slideTo(safe, 300);
+      } catch (e) { /* swiper not ready yet */ }
+    }
+  }
+
+  next(): void { this.applyFocus(this.focusedIndex + 1); }
+  prev(): void { this.applyFocus(this.focusedIndex - 1); }
+
+  templateFor(card?: Card): CardTemplate | undefined {
+    if (!card) return undefined;
+    const id = this.showBack ? card.backCardTemplateId : card.frontCardTemplateId;
+    return this.templateById.get(id);
+  }
+
+  flipSide(): void {
+    this.showBack = !this.showBack;
+  }
+
+  private buildForm(card: Card): void {
+    this.formSub?.unsubscribe();
+    const controls: { [k: string]: FormControl } = {};
+    this.fields
+      .filter(f => f.field !== 'id' && f.field !== 'deckId')
+      .forEach(f => {
+        controls[f.field as string] = new FormControl((card as any)[f.field]);
+      });
+    this.cardForm = new FormGroup(controls);
+    this.formSub = this.cardForm.valueChanges.pipe(debounceTime(300)).subscribe(value => {
+      if (!this.focusedCard) return;
+      const merged: Card = { ...this.focusedCard, ...(value as any) };
+      this.focusedCard = merged;
+      const idx = this.flatList.findIndex(c => c.id === merged.id);
+      if (idx >= 0) this.flatList[idx] = merged;
+      const masterIdx = this.cards.findIndex(c => c.id === merged.id);
+      if (masterIdx >= 0) this.cards[masterIdx] = merged;
+      this.focusedEdition = merged.editionId == null
+        ? null
+        : this.editions.find(e => e.id === merged.editionId) ?? null;
+      this.saveSubject.next({ id: merged.id, entity: merged });
+    });
+  }
+
+  private attachSwiperEvents(): void {
+    const el: any = this.swiperRef?.nativeElement;
+    if (!el) return;
+    el.addEventListener('slidechange', (event: any) => {
+      const swiper = event?.detail?.[0] ?? el.swiper;
+      if (swiper && typeof swiper.activeIndex === 'number') {
+        this.applyFocus(swiper.activeIndex);
+        this.cdr.detectChanges();
+      }
+    });
+    el.addEventListener('init', () => {
+      this.swiperReady = true;
+      if (this.focusedIndex > 0) {
+        try { el.swiper.slideTo(this.focusedIndex, 0); } catch (e) { /* noop */ }
+      }
+    });
+    // swiper-element fires 'init' synchronously on first render; mark ready optimistically too
+    this.swiperReady = true;
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    if (event.target && (event.target as HTMLElement).matches('input, textarea, select')) {
+      if (event.key === 'Escape') {
+        (event.target as HTMLElement).blur();
+        event.preventDefault();
+      }
+      return;
+    }
+    switch (event.key) {
+      case 'ArrowRight':
+        this.next();
+        event.preventDefault();
+        break;
+      case 'ArrowLeft':
+        this.prev();
+        event.preventDefault();
+        break;
+      case 'f':
+      case 'F':
+        this.searchInput?.nativeElement.focus();
+        event.preventDefault();
+        break;
+      case ' ':
+        this.flipSide();
+        event.preventDefault();
+        break;
+    }
+  }
+
+  editionColor(edition: Edition | null | undefined): string {
+    return edition?.color || '#3e4b5b';
+  }
+
+  optionsForField(field: EntityField<Card>): Promise<any[]> {
+    if (field.service) {
+      return field.service.getAll();
+    }
+    const opts = field.options || [];
+    return Promise.resolve(opts.map(o => ({ label: o, value: o })));
+  }
+
+  optionLabelKey(field: EntityField<Card>): string {
+    return field.service ? 'name' : 'label';
+  }
+
+  optionValueKey(field: EntityField<Card>): string {
+    return field.service ? field.service.getIdField() : 'value';
+  }
+
+  async exportFocusedAsPng(): Promise<void> {
+    const dataUrl = await this.renderFocusedToPng();
+    if (!dataUrl) return;
+    const blob = await (await fetch(dataUrl)).blob();
+    FileUtils.saveAs(blob, this.focusedFileName() + '.png');
+  }
+
+  async exportFocusedAsPdf(): Promise<void> {
+    const preview = this.findPreviewForFocused();
+    if (!preview) return;
+    const dataUrl = await this.renderFocusedToPng();
+    if (!dataUrl) return;
+    const widthPx = preview.initialWidth || 750;
+    const heightPx = preview.initialHeight || 1050;
+    const docDefinition: any = {
+      content: [{ image: dataUrl, width: widthPx, height: heightPx }],
+      pageSize: { width: widthPx, height: heightPx },
+      pageMargins: [0, 0, 0, 0]
+    };
+    pdfMake.createPdf(docDefinition).download(this.focusedFileName() + '.pdf');
+  }
+
+  private async renderFocusedToPng(): Promise<string | undefined> {
+    const preview = this.findPreviewForFocused();
+    if (!preview) return undefined;
+    const el: HTMLElement = (preview as any).element.nativeElement;
+    const target = el.querySelector('.card-element') as HTMLElement | null;
+    if (!target) return undefined;
+    return htmlToImage.toPng(target, { pixelRatio: 2 });
+  }
+
+  private findPreviewForFocused(): CardPreviewComponent | undefined {
+    if (!this.focusedCard || !this.previewComponents) return undefined;
+    const list = this.previewComponents.toArray();
+    return list.find(p => p.card?.id === this.focusedCard!.id);
+  }
+
+  private focusedFileName(): string {
+    const base = this.focusedCard?.name ? StringUtils.toKebabCase(this.focusedCard.name) : 'card';
+    return `${base}-${this.showBack ? 'back' : 'front'}`;
+  }
+}
