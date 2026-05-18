@@ -83,6 +83,8 @@
                 </p-tabPanel>
                 <p-tabPanel header="Actions">
                     <div class="actions-list">
+                        <button pButton label="Edit advanced (E)" icon="pi pi-pencil"
+                            (click)="openEditDialog()"></button>
                         <button pButton label="Export PNG" icon="pi pi-image"
                             (click)="exportFocusedAsPng()" class="p-button-secondary"></button>
                         <button pButton label="Export PDF" icon="pi pi-file-pdf"
@@ -100,3 +102,9 @@
         </div>
     </ng-template>
 </p-card>
+
+<app-entity-dialog [service]="cardsService"
+    [(visible)]="editDialogVisible"
+    [entity]="editDialogEntity"
+    (visibleChange)="!$event && onEditDialogClose()"></app-entity-dialog>
+

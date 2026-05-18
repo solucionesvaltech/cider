@@ -71,8 +71,11 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   private saveSubject = new Subject<{ id: number; entity: Card }>();
   private saveSub?: Subscription;
 
+  editDialogVisible = false;
+  editDialogEntity: Card = {} as Card;
+
   constructor(
-    private cardsService: CardsService,
+    public cardsService: CardsService,
     private editionsService: EditionsService,
     public templatesService: CardTemplatesService,
     private attributesService: CardAttributesService,
@@ -278,6 +281,11 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
         this.flipSide();
         event.preventDefault();
         break;
+      case 'e':
+      case 'E':
+        this.openEditDialog();
+        event.preventDefault();
+        break;
     }
   }
 
@@ -341,5 +349,19 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   private focusedFileName(): string {
     const base = this.focusedCard?.name ? StringUtils.toKebabCase(this.focusedCard.name) : 'card';
     return `${base}-${this.showBack ? 'back' : 'front'}`;
+  }
+
+  openEditDialog(): void {
+    if (!this.focusedCard) return;
+    this.editDialogEntity = { ...this.focusedCard };
+    this.editDialogVisible = true;
+  }
+
+  async onEditDialogClose(): Promise<void> {
+    await this.reload();
+    if (this.editDialogEntity && this.editDialogEntity.id) {
+      const idx = this.flatList.findIndex(c => c.id === this.editDialogEntity.id);
+      if (idx >= 0) this.applyFocus(idx);
+    }
   }
 }
