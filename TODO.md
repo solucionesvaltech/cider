@@ -18,14 +18,29 @@ Plan completo en `~/.claude/plans/est-s-tingly-rossum.md` dentro del entorno de 
 - **Editions CRUD** en `/decks/:id/editions` reusando `EntityTableComponent`.
 - **Phase 1 parcial** — `OutputFormatter` interface + `OUTPUT_FORMATTERS` `InjectionToken`. Formatters `SingleCardPngFormatter` y `SingleCardPdfFormatter`. El Viewer ya los consume.
 
-### Hecho en este commit (Phase 4 parcial)
-- **`computeTokenStats`** extraído de `entity-table.component.ts:174-199` a `shared/utils/token-stats.util.ts`. EntityTable ahora delega.
+### Hecho — Phase 4 parcial (Deck Stats)
+- **`computeTokenStats`** extraído de `entity-table.component.ts:174-199` a `shared/utils/token-stats.util.ts`. EntityTable ahora delega. Tests en `token-stats.util.spec.ts`.
 - **`DeckStatsComponent`** en `/decks/:id/stats` con 4 charts (`@swimlane/ngx-charts@20.5.0`):
   - Copies by edition (doughnut)
   - Copies-per-card distribution (vertical bar)
   - Distribution by attribute (horizontal bar, dropdown para elegir attr)
   - Top tokens (horizontal bar, dropdown para elegir campo)
-- **Tab "Stats" todavía no agregada** en `cards-tab-menu.component.ts` — ruta accesible sólo por URL directa. Agregar `{label: 'Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: [.../stats]}` cuando se retome.
+- **Tab "Stats"** ya wired en `cards-tab-menu`.
+
+### Hecho — Phase 4 parcial (filtros compartidos)
+- **`shared/utils/card-filters.util.ts`** — pipeline pure (filterCards, groupByEdition, applyFilterPipeline) usado por Viewer y Thumbnails. Tests en `card-filters.util.spec.ts`.
+- **Card Thumbnails** ahora tiene multi-select por edición + sort dropdown (paridad parcial con Viewer).
+
+### Hecho — Phase 2 (print templates + marcas)
+- **`PrintTemplate` entity** + **Dexie v5** (`printTemplates: '++id, projectId, name'`).
+- **`ProjectsChildService`** sibling de DecksChildService (FK=`projectId`).
+- **`PrintTemplatesService`** + componente CRUD en `/print-templates` + ítem top-level menu.
+- **`print-marks.util.ts`** — convierte un PrintTemplate en items canvas pdfmake (crop, registration, corner marks con bleed offset). Tests en `print-marks.util.spec.ts`.
+- **`ExportCardsComponent`** ahora tiene dropdown "Print Profile": al elegir uno, sobreescribe geometría y agrega marcas vía `docDefinition.background`. Sin profile → comportamiento legacy intacto.
+
+### Hecho — Phase 0 (Projects landing)
+- **`ProjectsComponent`** en `/projects` con EntityTable + botón Select Project (mismo contrato que DecksComponent). Top-level menu item "Projects".
+- Ruta no gated por ProjectGuard (es el lugar donde se elige el proyecto — gating crearía loop).
 
 ---
 
@@ -34,7 +49,8 @@ Plan completo en `~/.claude/plans/est-s-tingly-rossum.md` dentro del entorno de 
 ### Fase 0 (cerrar)
 - [ ] Refactor de rutas a prefijo `/projects/:projectId/decks/...` (tocar `app-routing.module.ts` + cada `routerLink` + `Router.navigate` de la app). Necesario para Firebase.
 - [ ] `project.guard.ts` backend-agnostic: hoy gatea sólo en `electronService.getProjectHomeUrl()`; debe gatear en "hay un Project seleccionado".
-- [ ] Pantalla "Projects" para listar/crear/elegir Project (welcome puede redirigir a ella).
+- [x] ~~Pantalla "Projects" para listar/crear/elegir Project~~ — hecho en `/projects`.
+- [ ] Welcome puede redirigir a `/projects` si no hay project seleccionado (hoy va directo a `/decks`).
 
 ### Fase 1 (cerrar)
 - [ ] Extraer `ExportCardsComponent.exportCardSheets()`, `exportIndividualImages()`, `exportCardSheetsAsImages()` a 3 formatters:
@@ -45,18 +61,19 @@ Plan completo en `~/.claude/plans/est-s-tingly-rossum.md` dentro del entorno de 
 - [ ] Reemplazar el switch de `export()` en `ExportCardsComponent` por `formatters.find(...).format(ctx)`.
 - [ ] Mover helpers a `shared/utils`: `sliceIntoChunks`, `dataUrlToFile`, `zipFiles`, `promisesProgress` (ya existen ad hoc en `export-cards.component.ts:343+`).
 
-### Fase 2 (print templates + marcas profesionales)
-- [ ] `print-template.type.ts` y `print-templates.service.ts` (Project-scoped: nuevo uso de `ParentScopedService<PrintTemplate, number, number>` con `projectsService.getSelectedProject()` y `'projectId'`).
-- [ ] Bump Dexie a **v5** con tabla `printTemplates: '++id, projectId, name'`.
-- [ ] `PrintTemplatesComponent` con `EntityTableComponent`. Ruta `/projects/:projectId/print-templates`.
-- [ ] `output-formatters/decorators/print-marks.decorator.ts` — overlay de bleed / crop / registro encima de cualquier sheet formatter (pdfmake canvas para PDF, SVG para PNG-ZIP).
-- [ ] `PdfSheetFormatter` consume `bleedMm`, `cropMarks`, `mirrorBacksX/Y` del print template.
-- [ ] Dropdown de perfiles en `export-cards.component.html`.
+### Fase 2 (print templates + marcas profesionales) — CASI COMPLETA
+- [x] ~~`print-template.type.ts`, `print-templates.service.ts`, Dexie v5, `PrintTemplatesComponent`~~
+- [x] ~~Marcas de impresión vía `print-marks.util.ts` + `docDefinition.background`~~
+- [x] ~~Dropdown de perfiles en `export-cards.component.html`~~
+- [ ] Mover `PRINT_TEMPLATES` a `/projects/:projectId/print-templates` cuando Fase 0 cierre el route refactor.
+- [ ] Trigger marcas también en el formato Tabletop Simulator / individual-image (hoy sólo en PDF sheet export).
+- [ ] Renderizar guides de bleed/safe-area en el preview del componente (no sólo en el PDF final) para feedback visual al diseñador.
 
 ### Fase 4 (cerrar)
-- [ ] **Agregar tab Stats en `cards-tab-menu.component.ts`** (línea ~25).
-- [ ] `card-thumbnails/gallery-filters.component.ts` — extraer la lógica de filtros del Viewer (`recomputeGroups`, multi-edición, search, sort) a un servicio compartido `shared/services/card-filter-state.service.ts` para que Viewer y Thumbnails usen el mismo backend de filtrado.
-- [ ] Aplicar filtros en `card-thumbnails.component.ts`.
+- [x] ~~Tab Stats en cards-tab-menu~~
+- [x] ~~Filtros compartidos viewer/thumbnails vía `shared/utils/card-filters.util.ts`~~
+- [ ] Extraer la barra de filtros a un componente reutilizable `<app-gallery-filters [(state)]>` para DRY en HTML.
+- [ ] Filtros adicionales: por tipo de carta, por count > N, "only with templates assigned".
 
 ### Fase 3 (HTML report)
 - [ ] `output-formatters/html-report.formatter.ts` — `supports('report')`. HTML autocontenido con PNGs inline (data URIs); fallback a ZIP-con-carpeta si supera 25MB.
