@@ -4,6 +4,7 @@ import { Asset } from "../types/asset.type";
 import { CardTemplate } from "../types/card-template.type";
 import { Deck } from "../types/deck.type";
 import { Edition } from "../types/edition.type";
+import { Project } from "../types/project.type";
 import { exportDB, importDB } from "dexie-export-import";
 import FileUtils from "src/app/shared/utils/file-utils";
 import { ExportProgress } from "dexie-export-import/dist/export";
@@ -27,15 +28,18 @@ export class AppDB extends Dexie {
     public static readonly PRINT_TEMPLATES_TABLE: string = 'printTemplates';
     public static readonly CARD_ATTRIBUTES_TABLE: string = 'cardAttributes';
     public static readonly EDITIONS_TABLE: string = 'editions';
+    public static readonly PROJECTS_TABLE: string = 'projects';
     private static readonly ALL_TABLES = [
         AppDB.GAMES_TABLE, AppDB.DECKS_TABLE, AppDB.CARDS_TABLE, AppDB.ASSETS_TABLE,
-        AppDB.CARD_TEMPLATES_TABLE, AppDB.CARD_ATTRIBUTES_TABLE, AppDB.EDITIONS_TABLE];
+        AppDB.CARD_TEMPLATES_TABLE, AppDB.CARD_ATTRIBUTES_TABLE, AppDB.EDITIONS_TABLE,
+        AppDB.PROJECTS_TABLE];
 
     games!: Table<Deck, number>;
     cards!: Table<Card, number>;
     assets!: Table<Asset, number>;
     cardTemplates!: Table<CardTemplate, number>;
     editions!: Table<Edition, number>;
+    projects!: Table<Project, number>;
     private httpClient;
     private changeSubject: Subject<null>;
 
@@ -90,15 +94,42 @@ export class AppDB extends Dexie {
             cards: '++id, deckId, editionId, count, frontCardTemplateId, backCardTemplateId',
             editions: '++id, deckId, name, order'
         });
+        // v4 introduces Project as the top-level container above Deck. A project carries
+        // the storage backend choice (indexeddb vs firebase). Existing decks are folded
+        // into a single "Default Project" so legacy routes (/decks/...) keep working
+        // until the routing refactor lands.
+        this.version(4).stores({
+            projects: '++id, name, storageBackend',
+            decks: '++id, projectId, name'
+        }).upgrade(async transaction => {
+            const projectsTable = transaction.table(AppDB.PROJECTS_TABLE);
+            const existing = await projectsTable.toArray();
+            let defaultProjectId: number;
+            if (existing.length === 0) {
+                defaultProjectId = await projectsTable.add({
+                    name: 'Default Project',
+                    description: 'Auto-created when upgrading the local database to v4.',
+                    storageBackend: 'indexeddb',
+                    createdAt: new Date().toISOString()
+                }) as number;
+            } else {
+                defaultProjectId = (existing[0] as any).id;
+            }
+            await transaction.table(AppDB.DECKS_TABLE).toCollection().modify(deck => {
+                if (deck.projectId === undefined) {
+                    deck.projectId = defaultProjectId;
+                }
+            });
+        });
         // populate in a non-traditional way since the 'on populate' will not allow ajax calls
         this.on('ready', () => this.table(AppDB.DECKS_TABLE).count()
         .then(count => {
             if (count > 0) {
                 console.log('db already populated');
-                return true;
+                return this.ensureDefaultProject().then(() => true);
             }
             console.log('populate from file');
-            return this.populateFromFile().then(() => true);
+            return this.populateFromFile().then(() => this.ensureDefaultProject()).then(() => true);
         }));
 
         // trigger changeSubject when change emitted to db
@@ -114,6 +145,32 @@ export class AppDB extends Dexie {
             //noTransaction: true
         });
         return true;
+    }
+
+    /**
+     * Ensure there is at least one Project and that every Deck points to one.
+     * Idempotent: safe to call on fresh DBs, after migrations, after re-imports.
+     */
+    public async ensureDefaultProject(): Promise<number> {
+        const projectsTable = this.table(AppDB.PROJECTS_TABLE);
+        const existing = await projectsTable.toArray();
+        let defaultProjectId: number;
+        if (existing.length === 0) {
+            defaultProjectId = await projectsTable.add({
+                name: 'Default Project',
+                description: 'Auto-created to host decks that did not belong to any project.',
+                storageBackend: 'indexeddb',
+                createdAt: new Date().toISOString()
+            } as any) as number;
+        } else {
+            defaultProjectId = (existing[0] as any).id;
+        }
+        await this.table(AppDB.DECKS_TABLE).toCollection().modify((deck: any) => {
+            if (deck.projectId === undefined || deck.projectId === null) {
+                deck.projectId = defaultProjectId;
+            }
+        });
+        return defaultProjectId;
     }
 
     /**
