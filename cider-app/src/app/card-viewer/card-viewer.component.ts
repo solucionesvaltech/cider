@@ -19,17 +19,13 @@ import { FieldType } from '../data-services/types/field-type.type';
 import FileUtils from '../shared/utils/file-utils';
 import StringUtils from '../shared/utils/string-utils';
 
+import {
+  CardFilterState, EditionGroup, NO_EDITION_KEY, NO_EDITION_LABEL,
+  applyFilterPipeline, defaultCardFilterState
+} from '../shared/utils/card-filters.util';
+
 interface SingleCardExportContext extends OutputFormatterContext {
   side: 'front' | 'back';
-}
-
-const NO_EDITION_KEY = '__none__';
-const NO_EDITION_LABEL = 'Sin edición';
-
-interface EditionGroup {
-  key: string;
-  edition: Edition | null;
-  cards: Card[];
 }
 
 @Component({
@@ -57,9 +53,14 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   showBack = false;
   cardForm = new FormGroup({});
 
-  searchQuery = '';
-  selectedEditionIds: (number | string)[] = [];
-  sortBy: 'edition' | 'name' = 'edition';
+  filterState: CardFilterState = defaultCardFilterState();
+  // proxy accessors so existing template bindings keep working
+  get searchQuery(): string { return this.filterState.query; }
+  set searchQuery(v: string) { this.filterState.query = v; }
+  get selectedEditionIds(): (number | string)[] { return this.filterState.selectedEditionIds; }
+  set selectedEditionIds(v: (number | string)[]) { this.filterState.selectedEditionIds = v; }
+  get sortBy(): 'edition' | 'name' | 'none' { return this.filterState.sortBy; }
+  set sortBy(v: 'edition' | 'name' | 'none') { this.filterState.sortBy = v; }
 
   sideOptions = [
     { label: 'Front', value: 'front' },
@@ -122,55 +123,9 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   recomputeGroups(): void {
-    const query = this.searchQuery.trim().toLowerCase();
-    const selected = this.selectedEditionIds && this.selectedEditionIds.length > 0
-      ? new Set(this.selectedEditionIds.map(v => '' + v))
-      : null;
-
-    const matches = (c: Card): boolean => {
-      if (query) {
-        const hay = JSON.stringify(c).toLowerCase();
-        if (!hay.includes(query)) {
-          return false;
-        }
-      }
-      if (selected) {
-        const key = c.editionId == null ? NO_EDITION_KEY : '' + c.editionId;
-        if (!selected.has(key)) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    const filtered = this.cards.filter(matches);
-
-    if (this.sortBy === 'name') {
-      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      this.groups = [{ key: 'all', edition: null, cards: filtered }];
-    } else {
-      const byEdition = new Map<string, Card[]>();
-      filtered.forEach(c => {
-        const key = c.editionId == null ? NO_EDITION_KEY : '' + c.editionId;
-        if (!byEdition.has(key)) {
-          byEdition.set(key, []);
-        }
-        byEdition.get(key)!.push(c);
-      });
-      const orderedKeys = this.editions
-        .map(e => '' + e.id)
-        .filter(k => byEdition.has(k));
-      if (byEdition.has(NO_EDITION_KEY)) {
-        orderedKeys.push(NO_EDITION_KEY);
-      }
-      this.groups = orderedKeys.map(key => ({
-        key,
-        edition: key === NO_EDITION_KEY ? null : this.editions.find(e => '' + e.id === key) ?? null,
-        cards: byEdition.get(key)!.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-      }));
-    }
-
-    this.flatList = this.groups.flatMap(g => g.cards);
+    const { groups, flat } = applyFilterPipeline(this.cards, this.editions, this.filterState);
+    this.groups = groups;
+    this.flatList = flat;
   }
 
   onSearchChange(): void {

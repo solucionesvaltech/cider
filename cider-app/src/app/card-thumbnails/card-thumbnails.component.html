@@ -8,10 +8,18 @@
             optionLabel="label" optionValue="value"></p-selectButton>
         <p-selectButton [options]="copyOptions" [(ngModel)]="copySelected" class="p-mr-3"
             optionLabel="label" optionValue="value" (onChange)="refreshCards()"></p-selectButton>
-        <input type="search" pInputText placeholder="Search Cards" (input)="filter($event)">
+        <p-multiSelect *ngIf="editions.length > 0" [options]="editions"
+            [(ngModel)]="filterState.selectedEditionIds" (onChange)="onFilterStateChange()"
+            optionLabel="name" optionValue="id" placeholder="All editions"
+            display="chip" appendTo="body" styleClass="thumbnails-multi"></p-multiSelect>
+        <p-selectButton [options]="sortOptions" [(ngModel)]="filterState.sortBy"
+            (onChange)="onFilterStateChange()" optionLabel="label" optionValue="value"></p-selectButton>
+        <input type="search" pInputText placeholder="Search Cards"
+            [(ngModel)]="filterState.query"
+            (input)="onFilterStateChange(); filter($event)">
     </div>
     <div class="card-thumbnails">
-        <p-dataView #dv [value]="thumbnailCards" [rows]="25" [paginator]="true" paginatorPosition="both" 
+        <p-dataView #dv [value]="thumbnailCards" [rows]="25" [paginator]="true" paginatorPosition="both"
             [filterBy]="filterFields" [alwaysShowPaginator]="false" [showCurrentPageReport]="true">
             <ng-template let-card pTemplate="listItem">
                 <app-card-preview *ngIf="sideSelected == 'fronts' || sideSelected == 'both'" [cache]="false"
