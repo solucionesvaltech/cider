@@ -65,6 +65,8 @@ import { EditionsComponent } from './editions/editions.component';
 import { CardViewerComponent } from './card-viewer/card-viewer.component';
 import { Card3dTiltDirective } from './card-viewer/card-3d-tilt.directive';
 import { OutputFormattersModule } from './output-formatters/output-formatters.module';
+import { DeckStatsComponent } from './deck-stats/deck-stats.component';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 @NgModule({
   declarations: [
@@ -89,7 +91,8 @@ import { OutputFormattersModule } from './output-formatters/output-formatters.mo
     ExportSelectionDialogComponent,
     EditionsComponent,
     CardViewerComponent,
-    Card3dTiltDirective
+    Card3dTiltDirective,
+    DeckStatsComponent
   ],
   imports: [
     BrowserModule,
@@ -128,7 +131,8 @@ import { OutputFormattersModule } from './output-formatters/output-formatters.mo
     DividerModule,
     MultiSelectModule,
     DataViewModule,
-    OutputFormattersModule
+    OutputFormattersModule,
+    NgxChartsModule
   ],
   providers: [CardToHtmlPipe],
   bootstrap: [AppComponent],

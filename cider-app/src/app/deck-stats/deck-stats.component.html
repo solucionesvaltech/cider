@@ -1,0 +1,77 @@
+<app-page-header header="Deck Stats" subheader="Composition and token frequencies for this deck"></app-page-header>
+<app-cards-tab-menu></app-cards-tab-menu>
+
+<p-card styleClass="page-card tabbed-card stats-card">
+    <div class="stats-summary">
+        <div class="stat-tile">
+            <span class="stat-value">{{ totalCards }}</span>
+            <span class="stat-label">Unique cards</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-value">{{ totalCopies }}</span>
+            <span class="stat-label">Total copies</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-value">{{ uniqueNames }}</span>
+            <span class="stat-label">Unique names</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-value">{{ editions.length }}</span>
+            <span class="stat-label">Editions</span>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <section class="stats-chart">
+            <header>
+                <h3>Copies by edition</h3>
+                <small>Sum of card counts across each edition (cards without one go to "Sin edición").</small>
+            </header>
+            <ngx-charts-pie-chart [results]="countByEdition" [scheme]="colorScheme"
+                [view]="[460, 280]" [legend]="true" [doughnut]="true" [labels]="true">
+            </ngx-charts-pie-chart>
+        </section>
+
+        <section class="stats-chart">
+            <header>
+                <h3>Copies-per-card distribution</h3>
+                <small>How many distinct cards have N copies in the deck.</small>
+            </header>
+            <ngx-charts-bar-vertical [results]="copiesHistogram" [scheme]="colorScheme"
+                [view]="[460, 280]" [xAxis]="true" [yAxis]="true" [showXAxisLabel]="true"
+                xAxisLabel="Copies" yAxisLabel="# of unique cards" [showYAxisLabel]="true">
+            </ngx-charts-bar-vertical>
+        </section>
+
+        <section class="stats-chart" *ngIf="attributeFields.length > 0">
+            <header>
+                <h3>Distribution by attribute</h3>
+                <small>Pick any of the deck's attributes to chart its value distribution.</small>
+                <p-dropdown [options]="attributeFields" [(ngModel)]="countByAttributeField"
+                    (onChange)="recomputeAttributeChart()" optionLabel="label" optionValue="value"
+                    appendTo="body" styleClass="stats-dropdown"></p-dropdown>
+            </header>
+            <ngx-charts-bar-horizontal [results]="countByAttribute" [scheme]="colorScheme"
+                [view]="[460, 320]" [xAxis]="true" [yAxis]="true">
+            </ngx-charts-bar-horizontal>
+        </section>
+
+        <section class="stats-chart">
+            <header>
+                <h3>Top tokens</h3>
+                <small>Most frequent space-separated tokens (weighted by copies).</small>
+                <p-dropdown
+                    [options]="attributeFields.length > 0
+                        ? ([{label:'Name', value:'name'}].concat(attributeFields))
+                        : [{label:'Name', value:'name'}]"
+                    [(ngModel)]="topTokensField"
+                    (onChange)="recomputeTokenChart()"
+                    optionLabel="label" optionValue="value"
+                    appendTo="body" styleClass="stats-dropdown"></p-dropdown>
+            </header>
+            <ngx-charts-bar-horizontal [results]="topTokens" [scheme]="colorScheme"
+                [view]="[460, 320]" [xAxis]="true" [yAxis]="true">
+            </ngx-charts-bar-horizontal>
+        </section>
+    </div>
+</p-card>

@@ -8,6 +8,7 @@ import { SortDirection } from '../data-services/types/search-sort.type';
 import XlsxUtils from '../shared/utils/xlsx-utils';
 import { Subject, debounceTime } from 'rxjs';
 import { TableStat, TokenStat } from './table-stat.type';
+import { computeTokenStats } from '../shared/utils/token-stats.util';
 
 @Component({
   selector: 'app-entity-table',
@@ -156,48 +157,7 @@ export class EntityTableComponent<Entity, Identifier extends string | number> im
   }
 
   public openStatsDialog() {
-    // calculate the stats
-    //
-    // field-name:
-    //   token-name   token-count    token-copies-count
-    //   token-name-2 token-count-2  token-copies-count-2
-    //   ...
-    // ...
-    // 
-    // text = 'text',
-    // textArea = 'text-area',
-    // number = 'number',
-    // file = 'file',
-    // option = 'option',
-    // optionList = 'optionList'
-    //
-    const stats = this.columns.filter(column => !column.hidden).map(column => {
-      const tokenStats = new Map<string, TokenStat>();
-      this.records.forEach(record => {
-        const copies = Number((record as any)['count'] || 1);
-        const value = record[column.field];
-        if (value) {
-          const strValue = '' + value;
-          strValue.replace(/[<][^>]*[>]|["'.,]/g, '').split(/ |\n|\r/).filter(str => str).forEach(token => {
-            const tokenStat = tokenStats.get(token);
-            if (tokenStat) {
-              tokenStats.set(token, 
-                {token: token, count: tokenStat.count + 1, 
-                  copiesCount: tokenStat.copiesCount + copies} as TokenStat);
-            } else if (tokenStats.size < this.statsTopX) {
-              tokenStats.set(token, 
-                {token: token, count: 1, copiesCount: copies} as TokenStat);
-            }
-          });
-        }
-      });
-      const tokens = Array.from(tokenStats.values()).sort((a, b) => b.count - a.count);
-      return {
-        header: column.header,
-        tokens: tokens
-      } as TableStat;
-    });
-    this.stats = stats;
+    this.stats = computeTokenStats(this.columns, this.records, this.statsTopX);
     this.statsVisible = true;
   }
 

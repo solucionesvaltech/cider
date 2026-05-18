@@ -1,0 +1,74 @@
+:host ::ng-deep .page-card {
+    &.tabbed-card {
+        margin-top: 0px;
+    }
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.stat-tile {
+    background: #1d2330;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #e8edf5;
+        font-variant-numeric: tabular-nums;
+    }
+    .stat-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        opacity: 0.6;
+    }
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+    gap: 18px;
+}
+
+.stats-chart {
+    background: #181d28;
+    border-radius: 10px;
+    padding: 14px 16px;
+
+    header {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 10px;
+
+        h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e8edf5;
+        }
+        small {
+            opacity: 0.6;
+            font-size: 0.78rem;
+        }
+        :host ::ng-deep .stats-dropdown {
+            margin-top: 4px;
+            max-width: 220px;
+        }
+    }
+}
+
+:host ::ng-deep .ngx-charts {
+    text {
+        fill: rgba(255, 255, 255, 0.7);
+    }
+}
