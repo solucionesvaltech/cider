@@ -170,6 +170,11 @@ export class SiteContentAndMenuComponent implements OnInit {
               }
             ]
           }, {
+            label: 'Projects',
+            icon: 'pi pi-pw pi-th-large',
+            styleClass: 'projects',
+            routerLink: ['/projects']
+          }, {
             label: selectedDeck ? selectedDeck.name : 'Select Deck',
             icon: 'pi pi-pw pi-book',
             styleClass: 'selected-deck',

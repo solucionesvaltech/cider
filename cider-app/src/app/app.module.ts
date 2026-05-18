@@ -68,6 +68,7 @@ import { OutputFormattersModule } from './output-formatters/output-formatters.mo
 import { DeckStatsComponent } from './deck-stats/deck-stats.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { PrintTemplatesComponent } from './print-templates/print-templates.component';
+import { ProjectsComponent } from './projects/projects.component';
 
 @NgModule({
   declarations: [
@@ -94,7 +95,8 @@ import { PrintTemplatesComponent } from './print-templates/print-templates.compo
     CardViewerComponent,
     Card3dTiltDirective,
     DeckStatsComponent,
-    PrintTemplatesComponent
+    PrintTemplatesComponent,
+    ProjectsComponent
   ],
   imports: [
     BrowserModule,
