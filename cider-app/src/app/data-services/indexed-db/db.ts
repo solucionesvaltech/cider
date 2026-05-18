@@ -1,8 +1,9 @@
 import Dexie, { IndexableType, Table } from "dexie";
-import { Card } from "primeng/card";
+import { Card } from "../types/card.type";
 import { Asset } from "../types/asset.type";
 import { CardTemplate } from "../types/card-template.type";
 import { Deck } from "../types/deck.type";
+import { Edition } from "../types/edition.type";
 import { exportDB, importDB } from "dexie-export-import";
 import FileUtils from "src/app/shared/utils/file-utils";
 import { ExportProgress } from "dexie-export-import/dist/export";
@@ -25,14 +26,16 @@ export class AppDB extends Dexie {
     public static readonly CARD_TEMPLATES_TABLE: string = 'cardTemplates'
     public static readonly PRINT_TEMPLATES_TABLE: string = 'printTemplates';
     public static readonly CARD_ATTRIBUTES_TABLE: string = 'cardAttributes';
+    public static readonly EDITIONS_TABLE: string = 'editions';
     private static readonly ALL_TABLES = [
-        AppDB.GAMES_TABLE, AppDB.DECKS_TABLE, AppDB.CARDS_TABLE, AppDB.ASSETS_TABLE, 
-        AppDB.CARD_TEMPLATES_TABLE, AppDB.CARD_ATTRIBUTES_TABLE];
+        AppDB.GAMES_TABLE, AppDB.DECKS_TABLE, AppDB.CARDS_TABLE, AppDB.ASSETS_TABLE,
+        AppDB.CARD_TEMPLATES_TABLE, AppDB.CARD_ATTRIBUTES_TABLE, AppDB.EDITIONS_TABLE];
 
     games!: Table<Deck, number>;
     cards!: Table<Card, number>;
     assets!: Table<Asset, number>;
     cardTemplates!: Table<CardTemplate, number>;
+    editions!: Table<Edition, number>;
     private httpClient;
     private changeSubject: Subject<null>;
 
@@ -79,6 +82,13 @@ export class AppDB extends Dexie {
                     delete asset.gameId;
                 });
             });
+        });
+        // v3 introduces editions (a thematic grouping of cards within a deck)
+        // and adds editionId? on cards for that grouping. No data backfill needed:
+        // existing cards keep editionId undefined and fall into the "no edition" bucket.
+        this.version(3).stores({
+            cards: '++id, deckId, editionId, count, frontCardTemplateId, backCardTemplateId',
+            editions: '++id, deckId, name, order'
         });
         // populate in a non-traditional way since the 'on populate' will not allow ajax calls
         this.on('ready', () => this.table(AppDB.DECKS_TABLE).count()
