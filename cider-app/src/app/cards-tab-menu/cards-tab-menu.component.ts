@@ -27,7 +27,8 @@ export class CardsTabMenuComponent implements OnInit {
           {label: 'Thumbnails', icon: 'pi pi-fw pi-th-large', routerLink: [`/decks/${selectedDeck?.id}/cards/thumbnails`]},
           {label: 'Viewer', icon: 'pi pi-fw pi-id-card', routerLink: [`/decks/${selectedDeck?.id}/cards/viewer`]},
           {label: 'Attributes', icon: 'pi pi-fw pi-caret-up', routerLink: [`/decks/${selectedDeck?.id}/cards/attributes`]},
-          {label: 'Editions', icon: 'pi pi-fw pi-bookmark', routerLink: [`/decks/${selectedDeck?.id}/editions`]}
+          {label: 'Editions', icon: 'pi pi-fw pi-bookmark', routerLink: [`/decks/${selectedDeck?.id}/editions`]},
+          {label: 'Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: [`/decks/${selectedDeck?.id}/stats`]}
         ];
       }
     });
