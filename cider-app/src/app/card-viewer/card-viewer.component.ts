@@ -1,13 +1,12 @@
 import {
   AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener,
-  OnDestroy, OnInit, QueryList, ViewChild, ViewChildren
+  Inject, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren
 } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import * as htmlToImage from 'html-to-image';
-import * as pdfMake from 'pdfmake/build/pdfmake';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import { ConfirmationService } from 'primeng/api';
 import { CardPreviewComponent } from '../card-preview/card-preview.component';
+import { OUTPUT_FORMATTERS, OutputFormatter, OutputFormatterContext } from '../output-formatters/output-formatter';
 import { CardAttributesService } from '../data-services/services/card-attributes.service';
 import { CardTemplatesService } from '../data-services/services/card-templates.service';
 import { CardsService } from '../data-services/services/cards.service';
@@ -19,6 +18,10 @@ import { EntityField } from '../data-services/types/entity-field.type';
 import { FieldType } from '../data-services/types/field-type.type';
 import FileUtils from '../shared/utils/file-utils';
 import StringUtils from '../shared/utils/string-utils';
+
+interface SingleCardExportContext extends OutputFormatterContext {
+  side: 'front' | 'back';
+}
 
 const NO_EDITION_KEY = '__none__';
 const NO_EDITION_LABEL = 'Sin edición';
@@ -82,6 +85,7 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     public templatesService: CardTemplatesService,
     private attributesService: CardAttributesService,
     private confirmationService: ConfirmationService,
+    @Inject(OUTPUT_FORMATTERS) private formatters: OutputFormatter[],
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -351,40 +355,54 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async exportFocusedAsPng(): Promise<void> {
-    const dataUrl = await this.renderFocusedToPng();
-    if (!dataUrl) return;
-    const blob = await (await fetch(dataUrl)).blob();
-    FileUtils.saveAs(blob, this.focusedFileName() + '.png');
+    await this.runSingleCardFormatter('single-card-png');
   }
 
   async exportFocusedAsPdf(): Promise<void> {
-    const preview = this.findPreviewForFocused();
-    if (!preview) return;
-    const dataUrl = await this.renderFocusedToPng();
-    if (!dataUrl) return;
-    const widthPx = preview.initialWidth || 750;
-    const heightPx = preview.initialHeight || 1050;
-    const docDefinition: any = {
-      content: [{ image: dataUrl, width: widthPx, height: heightPx }],
-      pageSize: { width: widthPx, height: heightPx },
-      pageMargins: [0, 0, 0, 0]
-    };
-    pdfMake.createPdf(docDefinition).download(this.focusedFileName() + '.pdf');
+    await this.runSingleCardFormatter('single-card-pdf');
   }
 
-  private async renderFocusedToPng(): Promise<string | undefined> {
-    const preview = this.findPreviewForFocused();
+  private async runSingleCardFormatter(formatterId: string): Promise<void> {
+    if (!this.focusedCard) return;
+    const formatter = this.formatters.find(f => f.id === formatterId);
+    if (!formatter) {
+      console.warn(`Output formatter "${formatterId}" not registered`);
+      return;
+    }
+    const ctx: SingleCardExportContext = {
+      cards: [this.focusedCard],
+      templateById: this.templateById,
+      side: this.showBack ? 'back' : 'front',
+      elementResolver: (cardId, side) => this.resolveCardElement(cardId, side)
+    };
+    try {
+      const blob = await formatter.format(ctx);
+      FileUtils.saveAs(blob, `${this.focusedFileName()}.${formatter.fileExtension}`);
+    } catch (err) {
+      console.error(`Export failed (${formatterId})`, err);
+    }
+  }
+
+  private resolveCardElement(cardId: number, side: 'front' | 'back'): HTMLElement | undefined {
+    if (!this.previewComponents) return undefined;
+    const wantedSide = side;
+    const previews = this.previewComponents.toArray()
+      .filter(p => p.card?.id === cardId);
+    // The viewer currently mounts one preview per slide using the side
+    // chosen by templateFor(); pick the one whose template matches the
+    // requested side or fall back to the only mounted preview.
+    const preferred = previews.find(p => {
+      const template = (p as any).template;
+      if (!template?.id || !this.focusedCard) return false;
+      const expected = wantedSide === 'front'
+        ? this.focusedCard.frontCardTemplateId
+        : this.focusedCard.backCardTemplateId;
+      return template.id === expected;
+    });
+    const preview = preferred || previews[0];
     if (!preview) return undefined;
     const el: HTMLElement = (preview as any).element.nativeElement;
-    const target = el.querySelector('.card-element') as HTMLElement | null;
-    if (!target) return undefined;
-    return htmlToImage.toPng(target, { pixelRatio: 2 });
-  }
-
-  private findPreviewForFocused(): CardPreviewComponent | undefined {
-    if (!this.focusedCard || !this.previewComponents) return undefined;
-    const list = this.previewComponents.toArray();
-    return list.find(p => p.card?.id === this.focusedCard!.id);
+    return (el.querySelector('.card-element') as HTMLElement | null) || undefined;
   }
 
   private focusedFileName(): string {

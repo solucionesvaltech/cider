@@ -64,6 +64,7 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
 import { EditionsComponent } from './editions/editions.component';
 import { CardViewerComponent } from './card-viewer/card-viewer.component';
 import { Card3dTiltDirective } from './card-viewer/card-3d-tilt.directive';
+import { OutputFormattersModule } from './output-formatters/output-formatters.module';
 
 @NgModule({
   declarations: [
@@ -126,7 +127,8 @@ import { Card3dTiltDirective } from './card-viewer/card-3d-tilt.directive';
     ChipsModule,
     DividerModule,
     MultiSelectModule,
-    DataViewModule
+    DataViewModule,
+    OutputFormattersModule
   ],
   providers: [CardToHtmlPipe],
   bootstrap: [AppComponent],
