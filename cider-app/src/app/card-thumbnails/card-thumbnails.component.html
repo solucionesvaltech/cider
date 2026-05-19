@@ -8,15 +8,9 @@
             optionLabel="label" optionValue="value"></p-selectButton>
         <p-selectButton [options]="copyOptions" [(ngModel)]="copySelected" class="p-mr-3"
             optionLabel="label" optionValue="value" (onChange)="refreshCards()"></p-selectButton>
-        <p-multiSelect *ngIf="editions.length > 0" [options]="editions"
-            [(ngModel)]="filterState.selectedEditionIds" (onChange)="onFilterStateChange()"
-            optionLabel="name" optionValue="id" placeholder="All editions"
-            display="chip" appendTo="body" styleClass="thumbnails-multi"></p-multiSelect>
-        <p-selectButton [options]="sortOptions" [(ngModel)]="filterState.sortBy"
-            (onChange)="onFilterStateChange()" optionLabel="label" optionValue="value"></p-selectButton>
-        <input type="search" pInputText placeholder="Search Cards"
-            [(ngModel)]="filterState.query"
-            (input)="onFilterStateChange(); filter($event)">
+        <app-gallery-filters [editions]="editions" [(state)]="filterState"
+            searchPlaceholder="Search Cards" [showNatural]="true"
+            (change)="onFilterStateChange()"></app-gallery-filters>
     </div>
     <div class="card-thumbnails">
         <p-dataView #dv [value]="thumbnailCards" [rows]="25" [paginator]="true" paginatorPosition="both"

@@ -6,6 +6,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import { ConfirmationService } from 'primeng/api';
 import { CardPreviewComponent } from '../card-preview/card-preview.component';
+import { GalleryFiltersComponent } from '../gallery-filters/gallery-filters.component';
 import { OUTPUT_FORMATTERS, OutputFormatter, OutputFormatterContext } from '../output-formatters/output-formatter';
 import { CardAttributesService } from '../data-services/services/card-attributes.service';
 import { CardTemplatesService } from '../data-services/services/card-templates.service';
@@ -36,7 +37,7 @@ interface SingleCardExportContext extends OutputFormatterContext {
 })
 export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('swiper') swiperRef?: ElementRef<any>;
-  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('galleryFilters') galleryFilters?: GalleryFiltersComponent;
   @ViewChildren(CardPreviewComponent) previewComponents: QueryList<CardPreviewComponent> = {} as QueryList<CardPreviewComponent>;
 
   cards: Card[] = [];
@@ -274,7 +275,7 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
         break;
       case 'f':
       case 'F':
-        this.searchInput?.nativeElement.focus();
+        this.galleryFilters?.focusSearch();
         event.preventDefault();
         break;
       case ' ':

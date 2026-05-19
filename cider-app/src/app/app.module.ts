@@ -69,6 +69,7 @@ import { DeckStatsComponent } from './deck-stats/deck-stats.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { PrintTemplatesComponent } from './print-templates/print-templates.component';
 import { ProjectsComponent } from './projects/projects.component';
+import { GalleryFiltersComponent } from './gallery-filters/gallery-filters.component';
 
 @NgModule({
   declarations: [
@@ -96,7 +97,8 @@ import { ProjectsComponent } from './projects/projects.component';
     Card3dTiltDirective,
     DeckStatsComponent,
     PrintTemplatesComponent,
-    ProjectsComponent
+    ProjectsComponent,
+    GalleryFiltersComponent
   ],
   imports: [
     BrowserModule,

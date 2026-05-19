@@ -3,15 +3,9 @@
 
 <p-card styleClass="page-card tabbed-card viewer-card">
     <div class="viewer-toolbar">
-        <input #searchInput type="search" pInputText placeholder="Search (F)"
-            [(ngModel)]="searchQuery" (input)="onSearchChange()" class="viewer-search">
-        <p-multiSelect [options]="editions" [(ngModel)]="selectedEditionIds"
-            optionLabel="name" optionValue="id" placeholder="All editions"
-            (onChange)="onFiltersChange()" styleClass="viewer-multiselect"
-            display="chip" appendTo="body" *ngIf="editions.length > 0"></p-multiSelect>
-        <p-selectButton [options]="[{label:'By edition', value:'edition'},{label:'By name', value:'name'}]"
-            [(ngModel)]="sortBy" (onChange)="onFiltersChange()"
-            optionLabel="label" optionValue="value"></p-selectButton>
+        <app-gallery-filters #galleryFilters [editions]="editions" [(state)]="filterState"
+            searchPlaceholder="Search (F)" [showNatural]="false"
+            (change)="onFiltersChange()"></app-gallery-filters>
         <p-selectButton [options]="sideOptions" [(ngModel)]="selectedSide"
             (onChange)="showBack = selectedSide === 'back'"
             optionLabel="label" optionValue="value"></p-selectButton>
