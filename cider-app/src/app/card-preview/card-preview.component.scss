@@ -2,6 +2,24 @@
     transform-origin: 0 0;
     width: fit-content;
     height: fit-content;
+    position: relative;
+}
+
+.print-guide {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+
+    &--trim {
+        inset: 0;
+        border: 1px solid rgba(255, 0, 0, 0.7);
+    }
+    &--bleed {
+        border: 1px dashed rgba(0, 153, 255, 0.85);
+    }
+    &--safe {
+        border: 1px dashed rgba(0, 200, 80, 0.9);
+    }
 }
 .card-element {
     width: fit-content;

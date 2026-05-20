@@ -8,7 +8,18 @@
     </div>
     <div *ngIf="!(cache && cachedImageUrl)" [style.transform]="'scale(' + scale + ')'"
         class="card-preview card-{{uuid}}{{lowInk ? ' low-ink' : ''}}" >
-        <div #cardElement class="card-element" 
+        <div #cardElement class="card-element"
             [innerHtml]="template | cardToHtml: card: assetUrls: uuid" ></div>
+        <ng-container *ngIf="printGuidesActive">
+            <div class="print-guide print-guide--bleed" *ngIf="bleedPx > 0"
+                [style.top.px]="-bleedPx" [style.right.px]="-bleedPx"
+                [style.bottom.px]="-bleedPx" [style.left.px]="-bleedPx"
+                title="Bleed area"></div>
+            <div class="print-guide print-guide--trim" title="Trim line"></div>
+            <div class="print-guide print-guide--safe" *ngIf="safeAreaPx > 0"
+                [style.top.px]="safeAreaPx" [style.right.px]="safeAreaPx"
+                [style.bottom.px]="safeAreaPx" [style.left.px]="safeAreaPx"
+                title="Safe area"></div>
+        </ng-container>
     </div>
 </div>

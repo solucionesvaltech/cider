@@ -12,9 +12,11 @@ import { CardAttributesService } from '../data-services/services/card-attributes
 import { CardTemplatesService } from '../data-services/services/card-templates.service';
 import { CardsService } from '../data-services/services/cards.service';
 import { EditionsService } from '../data-services/services/editions.service';
+import { PrintTemplatesService } from '../data-services/services/print-templates.service';
 import { Card } from '../data-services/types/card.type';
 import { CardTemplate } from '../data-services/types/card-template.type';
 import { Edition } from '../data-services/types/edition.type';
+import { PrintTemplate } from '../data-services/types/print-template.type';
 import { EntityField } from '../data-services/types/entity-field.type';
 import { FieldType } from '../data-services/types/field-type.type';
 import FileUtils from '../shared/utils/file-utils';
@@ -73,6 +75,10 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   noEditionLabel = NO_EDITION_LABEL;
   FieldType = FieldType;
 
+  printGuides = false;
+  printTemplates: PrintTemplate[] = [];
+  selectedPrintTemplate?: PrintTemplate;
+
   private swiperReady = false;
   private formSub?: Subscription;
   private saveSubject = new Subject<{ id: number; entity: Card }>();
@@ -86,6 +92,7 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     private editionsService: EditionsService,
     public templatesService: CardTemplatesService,
     private attributesService: CardAttributesService,
+    private printTemplatesService: PrintTemplatesService,
     private confirmationService: ConfirmationService,
     @Inject(OUTPUT_FORMATTERS) private formatters: OutputFormatter[],
     private cdr: ChangeDetectorRef
@@ -108,17 +115,22 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async reload(): Promise<void> {
-    const [cards, editions, templates, fields] = await Promise.all([
+    const [cards, editions, templates, fields, printTemplates] = await Promise.all([
       this.cardsService.getAll(),
       this.editionsService.getAll(),
       this.templatesService.getAll(),
-      this.cardsService.getFields()
+      this.cardsService.getFields(),
+      this.printTemplatesService.getAll()
     ]);
     this.cards = cards;
     this.editions = editions.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     this.templates = templates;
     this.templateById = new Map(templates.map(t => [t.id, t]));
     this.fields = fields.filter(f => !f.hidden);
+    this.printTemplates = printTemplates;
+    if (!this.selectedPrintTemplate && printTemplates.length > 0) {
+      this.selectedPrintTemplate = printTemplates[0];
+    }
     this.recomputeGroups();
     this.applyFocus(0);
   }
@@ -292,6 +304,11 @@ export class CardViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   editionColor(edition: Edition | null | undefined): string {
     return edition?.color || '#3e4b5b';
+  }
+
+  /** Print profile used to draw the bleed / safe-area guides. */
+  get guideProfile(): PrintTemplate {
+    return this.selectedPrintTemplate || PrintTemplatesService.defaultProfile();
   }
 
   optionsForField(field: EntityField<Card>): Promise<any[]> {

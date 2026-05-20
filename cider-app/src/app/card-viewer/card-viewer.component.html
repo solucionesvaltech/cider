@@ -9,6 +9,14 @@
         <p-selectButton [options]="sideOptions" [(ngModel)]="selectedSide"
             (onChange)="showBack = selectedSide === 'back'"
             optionLabel="label" optionValue="value"></p-selectButton>
+        <span class="viewer-guides">
+            <p-checkbox [(ngModel)]="printGuides" [binary]="true" inputId="printGuides"></p-checkbox>
+            <label for="printGuides">Print guides</label>
+            <p-dropdown *ngIf="printGuides && printTemplates.length > 0"
+                [options]="printTemplates" [(ngModel)]="selectedPrintTemplate"
+                optionLabel="name" placeholder="Default profile" appendTo="body"
+                styleClass="viewer-guides__dropdown"></p-dropdown>
+        </span>
         <span class="viewer-position" *ngIf="flatList.length > 0">
             {{ focusedIndex + 1 }} / {{ flatList.length }}
         </span>
@@ -33,7 +41,9 @@
                 <swiper-slide *ngFor="let card of flatList; let i = index" class="viewer-slide">
                     <div class="viewer-card-frame" appCard3dTilt [tiltEnabled]="i === focusedIndex">
                         <app-card-preview [card]="card" [scale]="0.6" [cache]="false"
-                            [template]="$any(templateFor(card)) || $any({})"></app-card-preview>
+                            [template]="$any(templateFor(card)) || $any({})"
+                            [showPrintGuides]="printGuides && i === focusedIndex"
+                            [printTemplate]="guideProfile"></app-card-preview>
                     </div>
                 </swiper-slide>
             </swiper-container>

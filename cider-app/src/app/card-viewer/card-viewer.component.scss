@@ -24,6 +24,18 @@
         opacity: 0.7;
         font-variant-numeric: tabular-nums;
     }
+
+    .viewer-guides {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            cursor: pointer;
+        }
+    }
 }
 
 .viewer-layout {
