@@ -97,10 +97,16 @@ Plan completo en `~/.claude/plans/est-s-tingly-rossum.md` dentro del entorno de 
 - [ ] `firestore.rules` (raíz repo) — solo lectura/escritura bajo `/users/{uid}/...`.
 - [ ] `StrategySelectorService` retorna FirestoreService cuando `project.storageBackend === 'firebase'`. Hay que generalizar `IndexedDbService` → `BackendStrategy` y que cada concrete service tome el strategy del selector en lugar de extender `IndexedDbService` directamente.
 
+### Testing (hecho en esta sesión)
+- [x] ~~Migración Karma → **Jest**~~ — `jest-preset-angular` + jsdom + `fake-indexeddb`. Corre sin browser (container y CI). `npm test` / `test:watch` / `test:coverage`. 27/40 suites verdes (47 tests).
+- [x] ~~**Playwright** E2E~~ — `playwright.config.ts` + `e2e/*.spec.ts` + `.github/workflows/e2e.yaml`. Corre en CI (browser no levanta en el container).
+- [ ] **Rehabilitar los 13 component specs stub** que aún fallan — son boilerplate del CLI nunca mantenido (mismo `NG0304: not a known element`; `app.component.spec` aún testea el `'cider app is running!'` default). Opciones: (a) arreglar cada TestBed con `NO_ERRORS_SCHEMA` + `HttpClientTestingModule`/`RouterTestingModule` + asserts reales, o (b) borrarlos (testean sólo `toBeTruthy` con setup roto). Decidir antes de cablear `npm test` al CI.
+- [ ] Agregar workflow CI de unit tests (`npm test`) una vez resueltos los 13 stubs, para no arrancar con CI en rojo.
+
 ### Fase 7 (quality gates)
 - [ ] `.eslintrc.json` (`@angular-eslint` + `@typescript-eslint`).
 - [ ] `.prettierrc.json`.
-- [ ] `.github/workflows/ci.yml` (lint + test + build). El repo está en `solucionesvaltech/cider`; usar Node 18.
+- [ ] `.github/workflows/ci.yml` (lint + build; el test ya tiene su propio camino). Usar Node 20.
 - [ ] Resolver lint findings preexistentes en commit separado para no inflar la PR del CI.
 
 ---
