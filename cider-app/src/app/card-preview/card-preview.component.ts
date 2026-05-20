@@ -2,6 +2,7 @@ import { AfterViewChecked, ChangeDetectorRef, Component, DoCheck, ElementRef, In
 import { AssetsService } from '../data-services/services/assets.service';
 import { CardTemplate } from '../data-services/types/card-template.type';
 import { Card } from '../data-services/types/card.type';
+import { PrintTemplate } from '../data-services/types/print-template.type';
 import { v4 as uuid } from 'uuid';
 import { AsyncSubject, lastValueFrom } from 'rxjs';
 import { RenderCacheService } from '../data-services/services/render-cache.service';
@@ -22,6 +23,8 @@ export class CardPreviewComponent implements OnInit, AfterViewChecked, OnChanges
   @Input() scale: number = 1.0;
   @Input() lowInk: boolean = false;
   @Input() cache: boolean = false;
+  @Input() showPrintGuides: boolean = false;
+  @Input() printTemplate?: PrintTemplate;
   initialWidth: number = 0;
   initialHeight: number = 0;
   assetUrls: any;
@@ -88,6 +91,33 @@ export class CardPreviewComponent implements OnInit, AfterViewChecked, OnChanges
       return 'style' !== node.localName;
     };
     return htmlToImage.toPng((<any>this.cardElement.get(0)).nativeElement, {pixelRatio: 1.0, filter: filter});
+  }
+
+  /** True when the print guide overlay should be drawn. */
+  get printGuidesActive(): boolean {
+    return this.showPrintGuides && !!this.printTemplate
+      && this.initialWidth > 0 && this.initialHeight > 0;
+  }
+
+  /** Card-element pixels per inch, derived from the template card width. */
+  private get pixelsPerInch(): number {
+    const widthIn = this.printTemplate?.cardWidthIn || 0;
+    if (!widthIn || !this.initialWidth) {
+      return 0;
+    }
+    return this.initialWidth / widthIn;
+  }
+
+  /** Safe-area inset in card-element pixels (inward from each edge). */
+  get safeAreaPx(): number {
+    const mm = this.printTemplate?.safeAreaMm || 0;
+    return (mm / 25.4) * this.pixelsPerInch;
+  }
+
+  /** Bleed extent in card-element pixels (outward from each edge). */
+  get bleedPx(): number {
+    const mm = this.printTemplate?.bleedMm || 0;
+    return (mm / 25.4) * this.pixelsPerInch;
   }
 
   public isLoaded() {

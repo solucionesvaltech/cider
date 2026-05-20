@@ -1,8 +1,11 @@
-import { NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+
+import { register as registerSwiperElements } from 'swiper/element/bundle';
+registerSwiperElements();
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -58,6 +61,15 @@ import { PageHeaderComponent } from './page-header/page-header.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { ExportSelectionDialogComponent } from './export-selection-dialog/export-selection-dialog.component';
 import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
+import { EditionsComponent } from './editions/editions.component';
+import { CardViewerComponent } from './card-viewer/card-viewer.component';
+import { Card3dTiltDirective } from './card-viewer/card-3d-tilt.directive';
+import { OutputFormattersModule } from './output-formatters/output-formatters.module';
+import { DeckStatsComponent } from './deck-stats/deck-stats.component';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { PrintTemplatesComponent } from './print-templates/print-templates.component';
+import { ProjectsComponent } from './projects/projects.component';
+import { GalleryFiltersComponent } from './gallery-filters/gallery-filters.component';
 
 @NgModule({
   declarations: [
@@ -79,7 +91,14 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
     CardThumbnailsComponent,
     PageHeaderComponent,
     WelcomeComponent,
-    ExportSelectionDialogComponent
+    ExportSelectionDialogComponent,
+    EditionsComponent,
+    CardViewerComponent,
+    Card3dTiltDirective,
+    DeckStatsComponent,
+    PrintTemplatesComponent,
+    ProjectsComponent,
+    GalleryFiltersComponent
   ],
   imports: [
     BrowserModule,
@@ -97,6 +116,7 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
     ToolbarModule,
     DialogModule,
     FormsModule,
+    ReactiveFormsModule,
     InputTextModule,
     InputTextareaModule,
     SplitterModule,
@@ -116,9 +136,12 @@ import { CardToHtmlPipe } from './shared/pipes/template-to-html.pipe';
     ChipsModule,
     DividerModule,
     MultiSelectModule,
-    DataViewModule
+    DataViewModule,
+    OutputFormattersModule,
+    NgxChartsModule
   ],
   providers: [CardToHtmlPipe],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AppModule { }

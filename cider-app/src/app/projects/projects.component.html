@@ -1,0 +1,11 @@
+<app-page-header header="Projects"
+    subheader="Pick a project to work on, or create a new one. Each project is its own bundle of decks, assets, attributes, editions and print templates."></app-page-header>
+<p-card styleClass="project-card">
+    <div class="projects-table">
+        <app-entity-table [service]="projectsService" [(selection)]="selectedProject"
+            selectionMode="single" [showColumnFilters]="false" [showInlineEditor]="false">
+        </app-entity-table>
+    </div>
+    <p-button label="Select Project" (click)="selectProject()"
+        [disabled]="!selectedProject || $any(selectedProject).length !== undefined"></p-button>
+</p-card>

@@ -92,6 +92,13 @@
                     <p-selectButton [options]="exportOptions" [(ngModel)]="exportType" optionLabel="name" optionValue="value"></p-selectButton>
                 </div>
                 <ng-container *ngIf="exportType === 'sheet-export'">
+                    <div class="p-field" *ngIf="availableProfiles.length > 0">
+                        <label>Print Profile</label>
+                        <p-dropdown [options]="availableProfiles" [(ngModel)]="selectedProfile" optionLabel="name"
+                            placeholder="(none — use paper settings below)" [showClear]="true"
+                            (onChange)="applyPrintProfile(selectedProfile)"></p-dropdown>
+                        <small>Saved profiles override paper / card / mirror settings and add crop / registration / corner marks to the PDF. Manage them under "Print Templates" in the top menu.</small>
+                    </div>
                     <div class="p-field">
                         <p-dropdown [options]="paperOptions" [(ngModel)]="selectedPaper" optionLabel="name"
                             (onChange)="changePaperType()"></p-dropdown>

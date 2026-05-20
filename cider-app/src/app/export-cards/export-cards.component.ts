@@ -2,7 +2,10 @@ import { AfterViewChecked, Component, OnInit, QueryList, ViewChildren } from '@a
 import { CardPreviewComponent } from '../card-preview/card-preview.component';
 import { CardTemplatesService } from '../data-services/services/card-templates.service';
 import { CardsService } from '../data-services/services/cards.service';
+import { PrintTemplatesService } from '../data-services/services/print-templates.service';
 import { Card } from '../data-services/types/card.type';
+import { PrintTemplate } from '../data-services/types/print-template.type';
+import { backgroundForProfile } from '../output-formatters/print-marks.util';
 import * as htmlToImage from 'html-to-image';
 import * as JSZip from 'jszip'
 import * as pdfMake from 'pdfmake/build/pdfmake';
@@ -74,9 +77,13 @@ export class ExportCardsComponent implements OnInit {
     { label: 'l', value: 0.2 },
     { label: 'xl', value: 0.4 }
   ];
+  public availableProfiles: PrintTemplate[] = [];
+  public selectedProfile: PrintTemplate | undefined;
 
-  constructor(cardsService: CardsService, 
-    public templatesService: CardTemplatesService) {
+  constructor(cardsService: CardsService,
+    public templatesService: CardTemplatesService,
+    public printTemplatesService: PrintTemplatesService) {
+      this.printTemplatesService.getAll().then(profiles => this.availableProfiles = profiles);
       cardsService.getAll().then(cards => {
         // check cards for front/back templates being defined
         const cardsWithTemplatesDefined = cards.filter(card => card.backCardTemplateId && card.frontCardTemplateId);
@@ -89,6 +96,34 @@ export class ExportCardsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+  }
+
+  /**
+   * Push a saved profile's geometry into the live form fields and
+   * re-slice. Marks themselves are applied at PDF build time.
+   */
+  public applyPrintProfile(profile: PrintTemplate | undefined): void {
+    this.selectedProfile = profile;
+    if (!profile) {
+      return;
+    }
+    this.paperWidth = profile.paperWidthIn;
+    this.paperHeight = profile.paperHeightIn;
+    this.paperMargins = profile.paperMarginsIn;
+    this.cardMargins = profile.cardMarginsIn;
+    this.cardsPerPage = profile.cardsPerPage;
+    this.mirrorBacksX = profile.mirrorBacksX;
+    this.mirrorBacksY = profile.mirrorBacksY;
+    this.pixelRatio = profile.pixelRatio || 1;
+    this.selectedPaper = {
+      name: profile.name,
+      width: profile.paperWidthIn,
+      height: profile.paperHeightIn,
+      orientation: profile.orientation,
+      mirrorBacksX: profile.mirrorBacksX,
+      mirrorBacksY: profile.mirrorBacksY
+    };
+    this.updateSlices();
   }
 
   public updateSelection(selection: Card | Card[] | undefined) {
@@ -278,15 +313,19 @@ export class ExportCardsComponent implements OnInit {
           : (this.paperWidth - this.paperMargins * 2) * ExportCardsComponent.PDF_DPI
       };
     });
-    const docDefinition = {
+    const docDefinition: any = {
       content: docSheets,
       pageSize: {
-        width: this.paperWidth * ExportCardsComponent.PDF_DPI, 
+        width: this.paperWidth * ExportCardsComponent.PDF_DPI,
         height: this.paperHeight * ExportCardsComponent.PDF_DPI
       },
       pageOrientation: this.selectedPaper.orientation,
       pageMargins: this.paperMargins * ExportCardsComponent.PDF_DPI
     };
+    const background = backgroundForProfile(this.selectedProfile);
+    if (background) {
+      docDefinition.background = background;
+    }
     pdfMake.createPdf(docDefinition).getBlob((blob) => {
       FileUtils.saveAs(blob, 'card-sheets.pdf');
       this.loadingPercent = 100;

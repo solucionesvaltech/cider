@@ -4,6 +4,7 @@ import { AppDB } from '../indexed-db/db';
 import { FieldType } from '../types/field-type.type';
 import { CardAttributesService } from './card-attributes.service';
 import { CardTemplatesService } from './card-templates.service';
+import { EditionsService } from './editions.service';
 import { EntityField } from '../types/entity-field.type';
 import { DecksChildService as DecksChildService } from '../indexed-db/decks-child.service';
 import { DecksService } from './decks.service';
@@ -14,16 +15,19 @@ import { DecksService } from './decks.service';
 export class CardsService extends DecksChildService<Card, number> {
 
   constructor(private attributesService: CardAttributesService,
-    private cardTemplatesService: CardTemplatesService, 
+    private cardTemplatesService: CardTemplatesService,
+    editionsService: EditionsService,
     decksService: DecksService, db: AppDB) {
     super(decksService, db, AppDB.CARDS_TABLE, [
       {field: 'id', header: 'ID', type: FieldType.number, hidden: true},
       {field: 'deckId', header: 'Deck ID', type: FieldType.number, hidden: true},
       {field: 'name', header: 'Name', type: FieldType.text, description: 'The name of the card'},
       {field: 'count', header: 'Count', type: FieldType.number, description: 'How many of this card appear in the deck'},
-      {field: 'frontCardTemplateId', header: 'Front Template', type: FieldType.option, 
+      {field: 'editionId', header: 'Edition', type: FieldType.option,
+        service: <any>editionsService, description: "The edition / collection this card belongs to"},
+      {field: 'frontCardTemplateId', header: 'Front Template', type: FieldType.option,
         service: <any>cardTemplatesService, description: "The card's front template"},
-      {field: 'backCardTemplateId', header: 'Back Template', type: FieldType.option, 
+      {field: 'backCardTemplateId', header: 'Back Template', type: FieldType.option,
         service: <any>cardTemplatesService, description: "The card's back template"}
     ]);
   }

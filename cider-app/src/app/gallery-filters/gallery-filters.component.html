@@ -1,0 +1,10 @@
+<div class="gallery-filters">
+    <input #searchInput type="search" pInputText [placeholder]="searchPlaceholder"
+        [(ngModel)]="state.query" (input)="emit()" class="gallery-filters__search">
+    <p-multiSelect *ngIf="editions.length > 0" [options]="editions"
+        [(ngModel)]="state.selectedEditionIds" (onChange)="emit()"
+        optionLabel="name" optionValue="id" placeholder="All editions"
+        display="chip" appendTo="body" styleClass="gallery-filters__multi"></p-multiSelect>
+    <p-selectButton [options]="sortOptions" [(ngModel)]="state.sortBy"
+        (onChange)="emit()" optionLabel="label" optionValue="value"></p-selectButton>
+</div>

@@ -1,7 +1,13 @@
-<app-page-header header="Welcome" 
+<app-page-header header="Welcome"
     [subheader]="isElectron ? 'Start a new project or open an existing one'
-                    : 'Select a deck to get started'"></app-page-header>
+                    : 'Pick a project, then dive into its decks'"></app-page-header>
 <p-card styleClass="artwork-card"></p-card>
+<p-card *ngIf="!isElectron" styleClass="welcome-card">
+    <p-button label="Browse Projects" icon="pi pi-th-large"
+        (click)="goToProjects()"></p-button>
+    <p-button label="Get Started" icon="pi pi-arrow-right"
+        (click)="goToDecks()"></p-button>
+</p-card>
 <p-card *ngIf="isElectron" styleClass="welcome-card">
     <p-button label="+ Blank Project"
         (click)="newProject(true)"></p-button>

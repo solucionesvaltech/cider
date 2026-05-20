@@ -8,10 +8,12 @@
             optionLabel="label" optionValue="value"></p-selectButton>
         <p-selectButton [options]="copyOptions" [(ngModel)]="copySelected" class="p-mr-3"
             optionLabel="label" optionValue="value" (onChange)="refreshCards()"></p-selectButton>
-        <input type="search" pInputText placeholder="Search Cards" (input)="filter($event)">
+        <app-gallery-filters [editions]="editions" [(state)]="filterState"
+            searchPlaceholder="Search Cards" [showNatural]="true"
+            (change)="onFilterStateChange()"></app-gallery-filters>
     </div>
     <div class="card-thumbnails">
-        <p-dataView #dv [value]="thumbnailCards" [rows]="25" [paginator]="true" paginatorPosition="both" 
+        <p-dataView #dv [value]="thumbnailCards" [rows]="25" [paginator]="true" paginatorPosition="both"
             [filterBy]="filterFields" [alwaysShowPaginator]="false" [showCurrentPageReport]="true">
             <ng-template let-card pTemplate="listItem">
                 <app-card-preview *ngIf="sideSelected == 'fronts' || sideSelected == 'both'" [cache]="false"

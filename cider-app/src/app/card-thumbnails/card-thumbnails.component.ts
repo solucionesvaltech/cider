@@ -1,8 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { DataView } from 'primeng/dataview';
 import { CardTemplatesService } from '../data-services/services/card-templates.service';
 import { CardsService } from '../data-services/services/cards.service';
-import { CardTemplate } from '../data-services/types/card-template.type';
+import { EditionsService } from '../data-services/services/editions.service';
 import { Card } from '../data-services/types/card.type';
+import { Edition } from '../data-services/types/edition.type';
+import {
+  CardFilterState, CardSortBy, applyFilterPipeline, defaultCardFilterState
+} from '../shared/utils/card-filters.util';
 
 @Component({
   selector: 'app-card-thumbnails',
@@ -11,6 +16,8 @@ import { Card } from '../data-services/types/card.type';
 })
 export class CardThumbnailsComponent implements OnInit {
   @ViewChild('dv') dv!: DataView;
+  cards: Card[] = [];
+  editions: Edition[] = [];
   thumbnailCards: Card[] = [];
   zoomLevel: number = 0.3;
   zoomOptions: any[] = [
@@ -32,36 +39,53 @@ export class CardThumbnailsComponent implements OnInit {
   ];
   copySelected: string = 'copies';
 
-
+  sortOptions: { label: string; value: CardSortBy }[] = [
+    { label: 'By edition', value: 'edition' },
+    { label: 'By name', value: 'name' },
+    { label: 'Natural', value: 'none' }
+  ];
+  filterState: CardFilterState = defaultCardFilterState();
 
   constructor(public cardsService: CardsService,
-    public templatesService: CardTemplatesService) { }
+    public templatesService: CardTemplatesService,
+    private editionsService: EditionsService) { }
 
-  ngOnInit(): void {
-    this.refreshCards();
-    this.cardsService.getFields().then(fields => {
-      this.filterFields = fields.map(field => field.field).join(',');
-    });
+  async ngOnInit(): Promise<void> {
+    const [cards, editions, fields] = await Promise.all([
+      this.cardsService.getAll(),
+      this.editionsService.getAll(),
+      this.cardsService.getFields()
+    ]);
+    this.cards = cards;
+    this.editions = editions;
+    this.filterFields = fields.map(f => f.field).join(',');
+    this.recomputeThumbnails();
   }
 
-  refreshCards() {
-    this.cardsService.getAll().then(cards => {
-      const expandedList: Card[] = [];
-      cards.forEach(card => {
-        if (this.copySelected === 'singles') {
-          expandedList.push(card);
-        } else {
-          for (let i = 0; i < (typeof card.count === 'undefined' ? 1 : card.count); i++) {
-            expandedList.push(card);
-          }
+  recomputeThumbnails(): void {
+    const { flat } = applyFilterPipeline(this.cards, this.editions, this.filterState);
+    const expanded: Card[] = [];
+    flat.forEach(card => {
+      if (this.copySelected === 'singles') {
+        expanded.push(card);
+      } else {
+        for (let i = 0; i < (typeof card.count === 'undefined' ? 1 : card.count); i++) {
+          expanded.push(card);
         }
-      });
-      this.thumbnailCards = expandedList;
+      }
     });
+    this.thumbnailCards = expanded;
   }
 
-  filter(input: any) {
+  refreshCards(): void {
+    this.recomputeThumbnails();
+  }
+
+  onFilterStateChange(): void {
+    this.recomputeThumbnails();
+  }
+
+  filter(input: any): void {
     (this.dv as any).filter(input.target.value, 'contains');
   }
-
 }

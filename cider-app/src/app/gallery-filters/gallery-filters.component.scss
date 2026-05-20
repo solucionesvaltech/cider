@@ -1,0 +1,11 @@
+.gallery-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+
+    &__search {
+        flex: 0 1 280px;
+        min-width: 180px;
+    }
+}
