@@ -11,6 +11,8 @@ import { CardsService } from '../data-services/services/cards.service';
 import { Router } from '@angular/router';
 import StringUtils from '../shared/utils/string-utils';
 import { AppDB } from '../data-services/indexed-db/db';
+import { ProjectsService } from '../data-services/services/projects.service';
+import { Project } from '../data-services/types/project.type';
 
 @Component({
   selector: 'app-welcome',
@@ -29,6 +31,7 @@ export class WelcomeComponent implements OnInit {
   projectUnsaved$: Observable<boolean>;
 
   recentProjectUrls: { url: string; name: string; hue: number; hue2: number; hover: boolean}[] = [];
+  selectedProject?: Project;
 
   constructor(private localStorageService: LocalStorageService,
     private confirmationService: ConfirmationService,
@@ -38,6 +41,7 @@ export class WelcomeComponent implements OnInit {
     private cardTemplatesService: CardTemplatesService,
     private cardAttributesService: CardAttributesService,
     private cardsService: CardsService,
+    private projectsService: ProjectsService,
     private router: Router,
     private db: AppDB) {
       this.isElectron = electronService.isElectron();
@@ -46,6 +50,9 @@ export class WelcomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.projectsService.getSelectedProject().pipe(take(1)).subscribe(project => {
+      this.selectedProject = project;
+    });
     this.localStorageService.getRecentProjectUrls().pipe(take(1)).subscribe(urls => {
       this.recentProjectUrls = urls.map(url => {
         let name = StringUtils.lastDirectoryFromUrl(url);
@@ -116,6 +123,18 @@ export class WelcomeComponent implements OnInit {
       this.router.navigateByUrl(`/decks`);
       this.displayLoading = false;
     });
+  }
+
+  public goToProjects(): void {
+    this.router.navigateByUrl('/projects');
+  }
+
+  /**
+   * Web-mode "get started": jump straight to the decks of the active
+   * project, or to the project picker first when none is selected yet.
+   */
+  public goToDecks(): void {
+    this.router.navigateByUrl(this.selectedProject ? '/decks' : '/projects');
   }
 
   calculateHue(text: string) {
