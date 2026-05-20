@@ -1,13 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { CardAttributesService } from '../data-services/services/card-attributes.service';
 import { CardsService } from '../data-services/services/cards.service';
+import { DecksService } from '../data-services/services/decks.service';
 import { EditionsService } from '../data-services/services/editions.service';
 import { Card } from '../data-services/types/card.type';
 import { CardAttribute } from '../data-services/types/card-attribute.type';
 import { Edition } from '../data-services/types/edition.type';
 import { EntityField } from '../data-services/types/entity-field.type';
 import { FieldType } from '../data-services/types/field-type.type';
+import { OUTPUT_FORMATTERS, OutputFormatter } from '../output-formatters/output-formatter';
 import { computeTokenStats } from '../shared/utils/token-stats.util';
+import FileUtils from '../shared/utils/file-utils';
 
 interface ChartDatum { name: string; value: number; }
 
@@ -38,14 +42,47 @@ export class DeckStatsComponent implements OnInit {
              '#ec4899', '#14b8a6', '#fb923c', '#a78bfa', '#22c55e']
   };
 
+  exporting = false;
+
   constructor(
     private cardsService: CardsService,
     private attributesService: CardAttributesService,
-    private editionsService: EditionsService
+    private editionsService: EditionsService,
+    private decksService: DecksService,
+    @Inject(OUTPUT_FORMATTERS) private formatters: OutputFormatter[]
   ) { }
 
   async ngOnInit(): Promise<void> {
     await this.loadAll();
+  }
+
+  /** Export a standalone HTML deck summary via the formatter registry. */
+  async exportSummary(): Promise<void> {
+    const formatter = this.formatters.find(f => f.id === 'deck-summary-html');
+    if (!formatter) {
+      console.warn('deck-summary-html formatter not registered');
+      return;
+    }
+    this.exporting = true;
+    try {
+      const [deck, fields] = await Promise.all([
+        firstValueFrom(this.decksService.getSelectedDeck()),
+        this.cardsService.getFields()
+      ]);
+      const blob = await formatter.format({
+        cards: this.cards,
+        templateById: new Map(),
+        editions: this.editions,
+        fields,
+        deckName: deck?.name || 'Deck'
+      });
+      const safeName = (deck?.name || 'deck').trim().replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+      FileUtils.saveAs(blob, `${safeName}-summary.${formatter.fileExtension}`);
+    } catch (err) {
+      console.error('Deck summary export failed', err);
+    } finally {
+      this.exporting = false;
+    }
   }
 
   private async loadAll(): Promise<void> {

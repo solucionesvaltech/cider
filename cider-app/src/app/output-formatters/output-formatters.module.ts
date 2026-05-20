@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { OUTPUT_FORMATTERS } from './output-formatter';
 import { SingleCardPngFormatter } from './single-card-png.formatter';
 import { SingleCardPdfFormatter } from './single-card-pdf.formatter';
+import { DeckSummaryHtmlFormatter } from './deck-summary-html.formatter';
 
 /**
  * Registers every OutputFormatter under the OUTPUT_FORMATTERS multi
@@ -17,8 +18,10 @@ import { SingleCardPdfFormatter } from './single-card-pdf.formatter';
   providers: [
     SingleCardPngFormatter,
     SingleCardPdfFormatter,
+    DeckSummaryHtmlFormatter,
     { provide: OUTPUT_FORMATTERS, useExisting: SingleCardPngFormatter, multi: true },
-    { provide: OUTPUT_FORMATTERS, useExisting: SingleCardPdfFormatter, multi: true }
+    { provide: OUTPUT_FORMATTERS, useExisting: SingleCardPdfFormatter, multi: true },
+    { provide: OUTPUT_FORMATTERS, useExisting: DeckSummaryHtmlFormatter, multi: true }
   ]
 })
 export class OutputFormattersModule { }

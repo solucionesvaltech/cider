@@ -1,6 +1,8 @@
 import { InjectionToken } from '@angular/core';
 import { Card } from '../data-services/types/card.type';
 import { CardTemplate } from '../data-services/types/card-template.type';
+import { Edition } from '../data-services/types/edition.type';
+import { EntityField } from '../data-services/types/entity-field.type';
 
 /**
  * What an OutputFormatter needs to do its job: the cards to render,
@@ -23,6 +25,12 @@ export interface OutputFormatterContext {
    * Optional progress hook (0..1).
    */
   onProgress?: (progress: number, info?: string) => void;
+  /**
+   * Optional metadata used by report-style formatters.
+   */
+  deckName?: string;
+  editions?: Edition[];
+  fields?: EntityField<Card>[];
 }
 
 /**

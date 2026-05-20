@@ -4,6 +4,12 @@
     }
 }
 
+.stats-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
 .stats-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
