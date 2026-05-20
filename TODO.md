@@ -50,7 +50,7 @@ Plan completo en `~/.claude/plans/est-s-tingly-rossum.md` dentro del entorno de 
 - [ ] Refactor de rutas a prefijo `/projects/:projectId/decks/...` (tocar `app-routing.module.ts` + cada `routerLink` + `Router.navigate` de la app). Necesario para Firebase.
 - [ ] `project.guard.ts` backend-agnostic: hoy gatea sólo en `electronService.getProjectHomeUrl()`; debe gatear en "hay un Project seleccionado".
 - [x] ~~Pantalla "Projects" para listar/crear/elegir Project~~ — hecho en `/projects`.
-- [ ] Welcome puede redirigir a `/projects` si no hay project seleccionado (hoy va directo a `/decks`).
+- [x] ~~Welcome surface a `/projects`~~ — card de bienvenida web con "Browse Projects" + "Get Started" (cae a `/projects` si no hay project seleccionado).
 
 ### Fase 1 (cerrar)
 - [ ] Extraer `ExportCardsComponent.exportCardSheets()`, `exportIndividualImages()`, `exportCardSheetsAsImages()` a 3 formatters:
@@ -67,18 +67,18 @@ Plan completo en `~/.claude/plans/est-s-tingly-rossum.md` dentro del entorno de 
 - [x] ~~Dropdown de perfiles en `export-cards.component.html`~~
 - [ ] Mover `PRINT_TEMPLATES` a `/projects/:projectId/print-templates` cuando Fase 0 cierre el route refactor.
 - [ ] Trigger marcas también en el formato Tabletop Simulator / individual-image (hoy sólo en PDF sheet export).
-- [ ] Renderizar guides de bleed/safe-area en el preview del componente (no sólo en el PDF final) para feedback visual al diseñador.
+- [x] ~~Renderizar guides de bleed/trim/safe-area en el preview~~ — `card-preview` con `[showPrintGuides]`/`[printTemplate]`, toggle + dropdown en el Viewer.
 
 ### Fase 4 (cerrar)
 - [x] ~~Tab Stats en cards-tab-menu~~
 - [x] ~~Filtros compartidos viewer/thumbnails vía `shared/utils/card-filters.util.ts`~~
-- [ ] Extraer la barra de filtros a un componente reutilizable `<app-gallery-filters [(state)]>` para DRY en HTML.
+- [x] ~~Extraer la barra de filtros a `<app-gallery-filters [(state)]>`~~ — usado por Viewer y Thumbnails.
 - [ ] Filtros adicionales: por tipo de carta, por count > N, "only with templates assigned".
 
 ### Fase 3 (HTML report)
-- [ ] `output-formatters/html-report.formatter.ts` — `supports('report')`. HTML autocontenido con PNGs inline (data URIs); fallback a ZIP-con-carpeta si supera 25MB.
-- [ ] `assets/report-templates/default.hbs` usando Handlebars (ya está en deps).
-- [ ] Reusa `RenderPipelineService` (Fase 1).
+- [x] ~~`DeckSummaryHtmlFormatter`~~ — `supports('report')`, HTML autocontenido text-only (counts + tabla por edición). Botón "Export Summary" en Deck Stats.
+- [ ] `output-formatters/card-gallery-html.formatter.ts` — variante con PNGs inline (data URIs) de cada carta; fallback a ZIP-con-carpeta si supera 25MB. Requiere `RenderPipelineService` (Fase 1) o un `elementResolver`.
+- [ ] `assets/report-templates/default.hbs` usando Handlebars (ya está en deps) si se quiere template editable por el usuario.
 
 ### Fase 5 (spreadsheet editor)
 - [ ] `cards-spreadsheet/cards-spreadsheet.component.{ts,html,scss}` con PrimeNG Table `editMode="cell"` + `pInplaceEditor`.
