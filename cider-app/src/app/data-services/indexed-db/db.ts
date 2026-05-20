@@ -30,10 +30,6 @@ export class AppDB extends Dexie {
     public static readonly CARD_ATTRIBUTES_TABLE: string = 'cardAttributes';
     public static readonly EDITIONS_TABLE: string = 'editions';
     public static readonly PROJECTS_TABLE: string = 'projects';
-    private static readonly ALL_TABLES = [
-        AppDB.GAMES_TABLE, AppDB.DECKS_TABLE, AppDB.CARDS_TABLE, AppDB.ASSETS_TABLE,
-        AppDB.CARD_TEMPLATES_TABLE, AppDB.CARD_ATTRIBUTES_TABLE, AppDB.EDITIONS_TABLE,
-        AppDB.PROJECTS_TABLE, AppDB.PRINT_TEMPLATES_TABLE];
 
     games!: Table<Deck, number>;
     cards!: Table<Card, number>;

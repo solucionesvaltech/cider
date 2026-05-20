@@ -35,8 +35,8 @@ describe('computeTokenStats', () => {
     expect(stats[0].tokens.length).toBeLessThanOrEqual(5);
   });
 
-  it('strips html tags and punctuation before tokenising', () => {
-    const records: FakeCard[] = [{ id: 1, name: '<b>Hello</b>, world!' }];
+  it('strips html tags, quotes, commas and periods before tokenising', () => {
+    const records: FakeCard[] = [{ id: 1, name: '<b>Hello</b>, "world".' }];
     const [stat] = computeTokenStats([nameField], records, 20);
     const tokens = stat.tokens.map(t => t.token);
     expect(tokens).toContain('Hello');
